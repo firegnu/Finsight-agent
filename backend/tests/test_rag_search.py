@@ -33,20 +33,22 @@ def test_overdue_query_hits_east_case():
     assert "east-2024-q3-overdue-spike" in ids
 
 
-def test_churn_query_hits_churn_methodology():
+def test_acquisition_query_hits_south_case():
+    """methodology cases moved to backend/skills/ (Day 7); RAG now contains
+    only real historical event cases."""
     from backend.tools.rag_search import run
 
     result = asyncio.run(run(
-        "客户流失有哪些早期信号", metric="churn_rate",
+        "华南获客量断崖原因", metric="new_customers",
     ))
     assert result["hit_count"] >= 1
-    assert result["hits"][0]["id"] == "method-churn-early-warning"
+    assert result["hits"][0]["id"] == "south-2023-channel-failure"
 
 
 def test_hits_include_score_and_snippet():
     from backend.tools.rag_search import run
 
-    result = asyncio.run(run("获客量下滑怎么调查", metric="new_customers"))
+    result = asyncio.run(run("华南渠道失灵", metric="new_customers"))
     assert result["hit_count"] >= 1
     top = result["hits"][0]
     assert 0 <= top["score"] <= 1
