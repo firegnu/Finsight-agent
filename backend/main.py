@@ -13,6 +13,7 @@ from .agent.orchestrator import run_agent
 from .config import settings
 from .db.approvals import get_decision, revoke_decision, submit_decision
 from .db.kpi import aggregate_kpi
+from .db.traces import delete_trace, get_trace_detail, list_traces
 from .knowledge_base.loader import get_case, load_all_cases
 
 logging.basicConfig(level=settings.log_level)
@@ -100,6 +101,31 @@ async def revoke_approval(report_id: str) -> dict:
     """Delete a recorded approval (allow the report to return to pending)."""
     removed = revoke_decision(report_id)
     return {"report_id": report_id, "revoked": removed}
+
+
+@app.get("/api/traces")
+async def traces_list(limit: int = 50) -> dict:
+    """Return recent analysis traces (newest first). Each trace includes
+    summary metadata but not individual steps — call /api/traces/{id} for detail."""
+    items = list_traces(limit=limit)
+    return {"count": len(items), "traces": items}
+
+
+@app.get("/api/traces/{trace_id}")
+async def trace_detail(trace_id: str) -> dict:
+    """Return a single trace with all steps + final report JSON."""
+    detail = get_trace_detail(trace_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail=f"trace not found: {trace_id}")
+    return detail
+
+
+@app.delete("/api/traces/{trace_id}")
+async def trace_delete(trace_id: str) -> dict:
+    removed = delete_trace(trace_id)
+    if not removed:
+        raise HTTPException(status_code=404, detail=f"trace not found: {trace_id}")
+    return {"trace_id": trace_id, "deleted": True}
 
 
 class AnalyzeRequest(BaseModel):

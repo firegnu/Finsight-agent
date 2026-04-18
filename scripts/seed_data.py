@@ -53,6 +53,34 @@ CREATE TABLE approvals (
     decided_at TEXT NOT NULL
 );
 CREATE INDEX idx_approvals_report ON approvals(report_id);
+
+CREATE TABLE traces (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trace_id TEXT UNIQUE NOT NULL,
+    user_query TEXT NOT NULL,
+    llm_model TEXT,
+    status TEXT,
+    total_latency_ms INTEGER DEFAULT 0,
+    step_count INTEGER DEFAULT 0,
+    started_at TEXT NOT NULL,
+    completed_at TEXT,
+    final_report_json TEXT
+);
+CREATE INDEX idx_traces_started_at ON traces(started_at DESC);
+
+CREATE TABLE trace_steps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trace_id TEXT NOT NULL,
+    step_number INTEGER NOT NULL,
+    action_type TEXT NOT NULL,
+    tool_name TEXT,
+    tool_input_json TEXT,
+    tool_output_summary TEXT,
+    latency_ms INTEGER DEFAULT 0,
+    timestamp TEXT NOT NULL,
+    FOREIGN KEY (trace_id) REFERENCES traces(trace_id)
+);
+CREATE INDEX idx_trace_steps_trace ON trace_steps(trace_id);
 """
 
 # Industry benchmarks (synthetic but plausible values for retail banking credit cards)

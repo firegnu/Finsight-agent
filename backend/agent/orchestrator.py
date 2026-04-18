@@ -4,14 +4,18 @@ from __future__ import annotations
 import json
 import logging
 import time
+from datetime import datetime, timezone
 from typing import Any, AsyncGenerator
 from uuid import uuid4
 
+from pydantic import ValidationError
+
 from ..config import settings
+from ..db.traces import save_trace
 from ..llm.client import MODEL, chat
 from ..sse.events import SSEEvent
 from ..tools.registry import TOOL_DEFINITIONS, execute_tool
-from .models import TraceLog, TraceStep
+from .models import AnalysisReport, TraceLog, TraceStep
 from .prompts import SYSTEM_PROMPT
 
 logger = logging.getLogger("finsight.orchestrator")
@@ -48,6 +52,7 @@ async def run_agent(user_query: str) -> AsyncGenerator[SSEEvent, None]:
         llm_model=MODEL,
     )
     t_start = time.time()
+    started_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
     messages: list[dict] = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -152,6 +157,10 @@ async def run_agent(user_query: str) -> AsyncGenerator[SSEEvent, None]:
             yield SSEEvent(type="report", data=report_result)
             trace.status = "success"
             completed = True
+            try:
+                trace.final_report = AnalysisReport(**report_result)
+            except (ValidationError, TypeError) as e:
+                logger.warning("failed to attach final_report to trace: %s", e)
             break
 
     if not completed:
@@ -166,3 +175,10 @@ async def run_agent(user_query: str) -> AsyncGenerator[SSEEvent, None]:
         "total_latency_ms": trace.total_latency_ms,
         "status": trace.status,
     })
+
+    # Persist the full trace to SQLite after the SSE stream is done. Failure
+    # here should not break the user-visible response — log and move on.
+    try:
+        save_trace(trace, started_at=started_at)
+    except Exception as e:  # noqa: BLE001
+        logger.exception("failed to persist trace %s: %s", trace.trace_id, e)
