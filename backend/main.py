@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from .agent.orchestrator import run_agent
 from .config import settings
+from .db.kpi import aggregate_kpi
 from .knowledge_base.loader import get_case, load_all_cases
 
 logging.basicConfig(level=settings.log_level)
@@ -31,18 +32,10 @@ async def health() -> dict:
 
 @app.get("/api/kpi")
 async def kpi() -> dict:
-    """Hardcoded KPI dashboard data (week 2: aggregate from SQLite)."""
-    return {
-        "period": "2026-03",
-        "updated_at": "2026-04-18T09:00:00Z",
-        "metrics": [
-            {"name": "获客量", "value": "12,450", "change": "+5.2%", "trend": "up", "alert": False},
-            {"name": "激活率", "value": "78.3%", "change": "-1.1%", "trend": "down", "alert": False},
-            {"name": "交易额", "value": "8,230万", "change": "+3.4%", "trend": "up", "alert": False},
-            {"name": "逾期率", "value": "3.8%", "change": "+0.6%", "trend": "up", "alert": True},
-            {"name": "催收回收率", "value": "85.2%", "change": "-2.1%", "trend": "down", "alert": False},
-        ],
-    }
+    """Live KPI aggregation from credit_card_metrics + industry_benchmark.
+    Latest month is aggregated across all regions; change% is vs previous month;
+    alert flags are driven by the industry_benchmark table's direction field."""
+    return aggregate_kpi()
 
 
 @app.get("/api/cases")
