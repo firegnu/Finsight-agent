@@ -1,7 +1,5 @@
 ## 项目代号：FinSight Agent
 
-## 对标产品：Essex EARS™（Ask EARS + Anomalix + TaskTrac）
-
 ------
 
 ## 一、项目定位
@@ -10,18 +8,18 @@
 
 金融数据智能分析Agent——用户用自然语言提问，Agent自动从多数据源采集数据、检测异常、追溯根因、生成带有优先级排序的行动建议报告。
 
-### 1.2 对标Essex EARS的切入点
+### 1.2 核心能力矩阵
 
-| 本项目功能                     | 对标EARS模块               | 核心技术                  |
+| 本项目功能                     | 能力类型                    | 核心技术                  |
 | ------------------------------ | -------------------------- | ------------------------- |
-| 自然语言→SQL生成→执行→结果解释 | Ask EARS                   | Tool Calling, Text-to-SQL |
-| 多数据源采集                   | Single Source of Truth     | Financial API + SQL + RAG |
-| 异常检测 + 严重度评分          | Anomalix                   | 统计对比 + 阈值检测       |
-| 根因分析                       | Anomalix Root-Cause Engine | CoT推理 + RAG检索历史案例 |
-| 结构化行动建议                 | TaskTrac / AttendNow       | Structured Output (JSON)  |
-| 阈值预警                       | AutoVigil                  | 规则引擎                  |
-| 实时推理展示                   | EARS UI                    | SSE流式传输               |
-| 人工审批                       | Control Room               | Human-in-the-Loop         |
+| 自然语言→SQL生成→执行→结果解释 | 自然语言查询                | Tool Calling, Text-to-SQL |
+| 多数据源采集                   | 统一数据层                  | Financial API + SQL + RAG |
+| 异常检测 + 严重度评分          | 异常检测                    | 统计对比 + 阈值检测       |
+| 根因分析                       | 根因推理                    | CoT推理 + RAG检索历史案例 |
+| 结构化行动建议                 | 任务输出                    | Structured Output (JSON)  |
+| 阈值预警                       | 规则预警                    | 规则引擎                  |
+| 实时推理展示                   | 流式 UI                     | SSE流式传输               |
+| 人工审批                       | Human-in-the-Loop          | 审批网关                  |
 
 ### 1.3 演示场景
 
@@ -163,9 +161,9 @@
 | source          | TEXT | 数据来源   |
 | updated_at      | TEXT | 更新时间   |
 
-### 3.2 Knowledge Base 设计（对标Essex白皮书）
+### 3.2 Knowledge Base 设计
 
-参照Essex Ask EARS白皮书的Knowledge Base Management Layer，构建三层元数据：
+参照业界数据分析 Agent 的元数据分层实践，构建三层元数据 Management Layer：
 
 **Layer 1: 数据级上下文**
 
@@ -208,7 +206,7 @@
   "business_rules": [
     {
       "term": "财年",
-      "definition": "Essex客户通常使用日历年（1月-12月），非美国财年",
+      "definition": "本系统约定财年等同于日历年（1月-12月）",
     },
     {
       "term": "健康逾期率",
@@ -757,7 +755,7 @@ docker compose up -d
 # nps穿透配置
 # 在nps服务端配置TCP隧道
 # 将办公室的8000端口和3000端口映射到公网
-# 面试官通过公网地址访问
+# 用户通过公网地址访问
 ```
 
 ------
@@ -775,11 +773,11 @@ docker compose up -d
 
 ------
 
-## 八、面试展示要点
+## 八、项目展示要点
 
 ### 8.1 开场（30秒）
 
-"我研究了Essex的EARS平台，特别是Ask EARS的技术白皮书，做了一个对标的金融数据分析Agent。它的核心是'从数据到洞察到行动'——不只是查数据，而是自动发现异常、分析根因、生成优先级排序的行动建议。"
+"这是一个金融数据智能分析 Agent：用户自然语言提问，Agent 自动从多数据源采集、异常检测、根因推理、生成优先级排序的行动建议。核心理念是'从数据到洞察到行动'——不只是查数据，而是自动发现异常、分析根因、给出可执行建议。"
 
 ### 8.2 现场演示流程
 
@@ -790,9 +788,9 @@ docker compose up -d
 5. 点击Approve按钮，展示Human-in-the-Loop
 6. 切换LLM Provider（从OpenAI切到DeepSeek），展示多后端能力
 
-### 8.3 技术深挖准备
+### 8.3 架构追问 FAQ
 
-面试官可能追问的技术点和你的回答方向：
+常见的技术追问和回答方向：
 
 | 追问                        | 回答方向                                            |
 | --------------------------- | --------------------------------------------------- |

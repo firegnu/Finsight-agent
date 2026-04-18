@@ -1,6 +1,6 @@
 # FinSight Agent
 
-金融数据智能分析 Agent（面试演示项目）——用户用自然语言提问，Agent 自动从多数据源采集数据、检测异常、生成带有优先级的行动建议报告。对标 Essex EARS 平台（Ask EARS + Anomalix + TaskTrac）。
+金融数据智能分析 Agent（MVP 演示项目）——用户用自然语言提问，Agent 自动从多数据源采集数据、检测异常、生成带有优先级的行动建议报告。核心理念：**从数据到洞察到行动**。
 
 ## 技术栈
 
@@ -110,7 +110,7 @@ LLM_MODEL=gpt-4o-mini
 
 `llm/client.py` 里有响应归一化层，自动把 `reasoning_content`（DeepSeek R1 / OpenAI o1 / Qwen thinking 这类 reasoning 模型的思考字段）合并到 `content`，所以换模型不用改业务代码。
 
-## 架构要点（面试技术深挖）
+## 架构要点（常见追问 FAQ）
 
 | 追问 | 回答 |
 |---|---|
@@ -124,7 +124,7 @@ LLM_MODEL=gpt-4o-mini
 
 ## 项目文档
 
-- `FinSight Agent.md` — 原始设计文档（对标 Essex EARS 白皮书）
+- `FinSight Agent.md` — 原始设计文档
 - `docs/plans/2026-04-18-finsight-agent-mvp.md` — 两天 MVP 实施计划 + 下周占位清单
 
 ## 开发路线

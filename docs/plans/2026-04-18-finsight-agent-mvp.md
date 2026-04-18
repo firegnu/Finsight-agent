@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11+, FastAPI, OpenAI SDK (LM Studio 兼容), Pydantic v2, SQLite, NumPy; React 18 + TypeScript, Vite, Tailwind CSS.
 
-**Design Reference:** 本 plan 基于 `FinSight Agent.md` 设计文档，经过面试演示定位的取舍和收敛。设计讨论详见 conversation context。
+**Design Reference:** 本 plan 基于 `FinSight Agent.md` 设计文档，经过 MVP 演示定位的取舍和收敛。设计讨论详见 conversation context。
 
 ---
 
@@ -17,7 +17,7 @@
 - **Demo 优先，生产次要**：只做黄金路径，砍掉边缘情况和防御性代码。
 - **Frequent commits**：每完成一个任务（Task）就 commit + push，每天结束前远程有进展。
 - **TDD 仅用于纯函数**：异常检测数学、SQL 校验、Pydantic 模型用 pytest 测；LLM 集成点用 curl 人工验证；前端用浏览器人工验证。
-- **文件行数弹性**：面试项目，单文件可略超 200 行，但模块职责必须清晰。
+- **文件行数弹性**：演示项目，单文件可略超 200 行，但模块职责必须清晰。
 - **测试失败先停下再修**：绝不跳过或绕过失败的测试。
 
 ---
@@ -1662,7 +1662,7 @@ git push
 ```markdown
 # FinSight Agent
 
-金融数据智能分析 Agent（面试演示项目）——用户用自然语言提问，Agent 自动从多数据源采集数据、检测异常、生成带有优先级的行动建议报告。
+金融数据智能分析 Agent（MVP 演示项目）——用户用自然语言提问，Agent 自动从多数据源采集数据、检测异常、生成带有优先级的行动建议报告。
 
 ## 快速启动
 
@@ -2703,11 +2703,11 @@ make dev-frontend  # 终端 2
 - [x] 3 个演示问题流畅跑通
 - [x] README 可照着启动
 - [x] 所有代码已 push GitHub
-- [x] 有可用于发送给面试官的录屏
+- [x] 有可用的演示录屏
 
 **Final commit:**
 ```bash
-git tag v0.1.0-demo -m "MVP demo ready for interview showcase"
+git tag v0.1.0-demo -m "MVP demo ready for showcase"
 git push --tags
 ```
 
@@ -2750,7 +2750,7 @@ git push --tags
 7. **VPS 部署**
    - 阿里云/腾讯云轻量 + Docker + Nginx 反向代理
    - HTTPS（Let's Encrypt）
-   - 面试现场演示链接
+   - 线上演示链接
 
 8. **UI 重设计（claude design）**
    - 把这两天的裸 Tailwind 换成 polished 视觉
