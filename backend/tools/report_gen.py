@@ -8,7 +8,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from ..agent.models import AnalysisReport
-from ..llm.client import llm, MODEL
+from ..llm.client import MODEL, chat
 
 logger = logging.getLogger("finsight.report_gen")
 
@@ -79,14 +79,14 @@ async def run(findings_summary: str) -> dict:
         if last_err:
             user_msg += f"\n\n上次生成的 JSON 有错误：{last_err}\n请修正后重新生成。"
 
-        response = await llm.chat.completions.create(
+        response = await chat(
             model=MODEL,
             messages=[
                 {"role": "system", "content": REPORT_SYS_PROMPT},
                 {"role": "user", "content": user_msg},
             ],
             temperature=0.3,
-            response_format={"type": "json_object"},
+            max_tokens=4096,
         )
         last_raw = response.choices[0].message.content or "{}"
         try:

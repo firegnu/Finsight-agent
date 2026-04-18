@@ -8,7 +8,7 @@ from typing import AsyncGenerator
 from uuid import uuid4
 
 from ..config import settings
-from ..llm.client import llm, MODEL
+from ..llm.client import MODEL, chat
 from ..sse.events import SSEEvent
 from ..tools.registry import TOOL_DEFINITIONS, execute_tool
 from .models import TraceLog, TraceStep
@@ -54,12 +54,13 @@ async def run_agent(user_query: str) -> AsyncGenerator[SSEEvent, None]:
     for step in range(settings.max_agent_steps):
         step_t = time.time()
         try:
-            response = await llm.chat.completions.create(
+            response = await chat(
                 model=MODEL,
                 messages=messages,
                 tools=TOOL_DEFINITIONS,
                 tool_choice="auto",
                 temperature=0.3,
+                max_tokens=4096,
             )
         except Exception as e:  # noqa: BLE001
             logger.exception("LLM call failed at step %d", step)

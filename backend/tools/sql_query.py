@@ -6,7 +6,7 @@ import re
 
 from ..agent.prompts import SQL_GEN_PROMPT
 from ..db.database import query_all
-from ..llm.client import llm, MODEL
+from ..llm.client import MODEL, chat
 
 logger = logging.getLogger("finsight.sql_query")
 
@@ -39,13 +39,14 @@ async def generate_sql(query_description: str, prior_error: str | None = None) -
     if prior_error:
         user_msg += f"\n\n上次生成的 SQL 执行出错了：{prior_error}\n请修正后重新生成。"
 
-    response = await llm.chat.completions.create(
+    response = await chat(
         model=MODEL,
         messages=[
             {"role": "system", "content": SQL_GEN_PROMPT},
             {"role": "user", "content": user_msg},
         ],
         temperature=0,
+        max_tokens=1024,
     )
     raw = response.choices[0].message.content or ""
     sql = raw.strip()
