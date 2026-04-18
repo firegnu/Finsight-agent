@@ -30,7 +30,71 @@ CREATE TABLE credit_card_metrics (
     UNIQUE(year_month, region)
 );
 CREATE INDEX idx_region_month ON credit_card_metrics(region, year_month);
+
+CREATE TABLE industry_benchmark (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    metric_name TEXT UNIQUE NOT NULL,
+    metric_cn TEXT NOT NULL,
+    benchmark_value REAL NOT NULL,
+    direction TEXT NOT NULL,
+    unit TEXT NOT NULL,
+    source TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    description TEXT
+);
 """
+
+# Industry benchmarks (synthetic but plausible values for retail banking credit cards)
+INDUSTRY_BENCHMARKS = [
+    {
+        "metric_name": "overdue_rate", "metric_cn": "逾期率",
+        "benchmark_value": 0.035, "direction": "lower_is_better", "unit": "ratio_0_1",
+        "source": "零售银行业 2025 年度白皮书",
+        "description": "行业同业信用卡业务逾期率均值，3.5% 为警戒线，5% 以上为高风险",
+    },
+    {
+        "metric_name": "activation_rate", "metric_cn": "激活率",
+        "benchmark_value": 0.76, "direction": "higher_is_better", "unit": "ratio_0_1",
+        "source": "零售银行业 2025 年度白皮书",
+        "description": "发卡后 90 天内激活比例，行业均值 76%",
+    },
+    {
+        "metric_name": "churn_rate", "metric_cn": "流失率",
+        "benchmark_value": 0.030, "direction": "lower_is_better", "unit": "ratio_0_1",
+        "source": "零售银行业 2025 年度白皮书",
+        "description": "年化月均流失率，3% 为行业平均水平",
+    },
+    {
+        "metric_name": "collection_recovery_rate", "metric_cn": "催收回收率",
+        "benchmark_value": 0.85, "direction": "higher_is_better", "unit": "ratio_0_1",
+        "source": "信用卡催收业务年报（行业协会）",
+        "description": "逾期 30-90 天账款的催回率均值",
+    },
+    {
+        "metric_name": "new_customers", "metric_cn": "新客获客量",
+        "benchmark_value": 2500, "direction": "higher_is_better", "unit": "人/月/区域",
+        "source": "零售银行业 2025 年度白皮书",
+        "description": "单区域月均获客量（同业规模相当银行对标）",
+    },
+    {
+        "metric_name": "revenue_per_customer", "metric_cn": "客均收入",
+        "benchmark_value": 650, "direction": "higher_is_better", "unit": "元/月",
+        "source": "信用卡业务盈利分析报告",
+        "description": "含利息、年费、分期手续费等综合收入",
+    },
+    {
+        "metric_name": "monthly_transaction_volume", "metric_cn": "月交易额",
+        "benchmark_value": 1900, "direction": "higher_is_better", "unit": "万元/区域",
+        "source": "零售银行业 2025 年度白皮书",
+        "description": "单区域月交易总额均值",
+    },
+    {
+        "metric_name": "customer_complaints", "metric_cn": "客户投诉量",
+        "benchmark_value": 125, "direction": "lower_is_better", "unit": "件/月/区域",
+        "source": "银行业消费者保护年报",
+        "description": "单区域月度客户投诉受理数（含正式工单）",
+    },
+]
 
 BASELINES = {
     "华东": {"new": 2800, "act": 0.78, "vol": 2200, "ovr": 0.032, "col": 0.86, "cpl": 120, "rpc": 680, "chn": 0.028},
@@ -95,8 +159,19 @@ def seed(db_path: Path) -> None:
             "VALUES (?,?,?,?,?,?,?,?,?,?)",
             rows,
         )
+        updated_at = "2026-04-01T00:00:00Z"
+        conn.executemany(
+            "INSERT INTO industry_benchmark "
+            "(metric_name, metric_cn, benchmark_value, direction, unit, source, updated_at, description) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            [
+                (b["metric_name"], b["metric_cn"], b["benchmark_value"], b["direction"],
+                 b["unit"], b["source"], updated_at, b["description"])
+                for b in INDUSTRY_BENCHMARKS
+            ],
+        )
         conn.commit()
-        print(f"Seeded {len(rows)} rows into {db_path}")
+        print(f"Seeded {len(rows)} metric rows + {len(INDUSTRY_BENCHMARKS)} benchmarks into {db_path}")
     finally:
         conn.close()
 

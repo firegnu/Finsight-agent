@@ -4,7 +4,13 @@ Week 2 additions will simply add entries here without touching the orchestrator.
 """
 from typing import Any, Awaitable, Callable
 
-from . import anomaly_detect, rag_search, report_gen, sql_query
+from . import (
+    anomaly_detect,
+    financial_api,
+    rag_search,
+    report_gen,
+    sql_query,
+)
 
 
 ToolHandler = Callable[..., Awaitable[dict]]
@@ -13,6 +19,7 @@ ToolHandler = Callable[..., Awaitable[dict]]
 TOOL_DEFINITIONS: list[dict] = [
     sql_query.TOOL_SCHEMA,
     anomaly_detect.TOOL_SCHEMA,
+    financial_api.TOOL_SCHEMA,
     rag_search.TOOL_SCHEMA,
     report_gen.TOOL_SCHEMA,
 ]
@@ -21,6 +28,7 @@ TOOL_DEFINITIONS: list[dict] = [
 TOOL_HANDLERS: dict[str, ToolHandler] = {
     "sql_query": sql_query.run,
     "anomaly_detect": anomaly_detect.run,
+    "financial_api": financial_api.run,
     "rag_search": rag_search.run,
     "report_gen": report_gen.run,
 }
