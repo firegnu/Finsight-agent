@@ -34,8 +34,8 @@ REPORT_SYS_PROMPT = """你是报告生成器。基于用户提供的分析发现
       "deviation_sigma": number,
       "baseline_value": null,
       "severity": "low | medium | high | critical",
-      "root_cause_hypothesis": "string，基于数据和业务常识的根因推测",
-      "references": []
+      "root_cause_hypothesis": "string，基于数据、历史案例和业务常识的根因推测",
+      "references": ["string，RAG 检索到的历史案例 id，如 'east-2024-q3-overdue-spike'；无则空数组"]
     }
   ],
   "action_items": [
@@ -57,7 +57,9 @@ REPORT_SYS_PROMPT = """你是报告生成器。基于用户提供的分析发现
 - 每个异常至少配一个行动建议
 - 只输出 JSON，不要任何解释、不要 markdown 代码块
 - 数字字段保持原始精度
-- anomalies 数组里的 references 和 baseline_value 这两天保持为空/null
+- baseline_value 字段本次保持 null（待 financial_api 工具上线后填充）
+- references 字段：如 findings_summary 里带了历史案例 id（RAG 检索结果），在对应 anomaly
+  下填入；根因推测也要结合这些案例的经验，在 root_cause_hypothesis 里体现"历史上类似情况..."
 """
 
 
