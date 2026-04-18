@@ -2,7 +2,10 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
+from .agent.orchestrator import run_agent
 from .config import settings
 
 logging.basicConfig(level=settings.log_level)
@@ -37,3 +40,24 @@ async def kpi() -> dict:
             {"name": "催收回收率", "value": "85.2%", "change": "-2.1%", "trend": "down", "alert": False},
         ],
     }
+
+
+class AnalyzeRequest(BaseModel):
+    query: str
+
+
+@app.post("/api/analyze")
+async def analyze(req: AnalyzeRequest) -> StreamingResponse:
+    async def stream():
+        async for event in run_agent(req.query):
+            yield event.serialize()
+
+    return StreamingResponse(
+        stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
