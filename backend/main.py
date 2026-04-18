@@ -5,8 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from fastapi import HTTPException
+
 from .agent.orchestrator import run_agent
 from .config import settings
+from .knowledge_base.loader import get_case, load_all_cases
 
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger("finsight")
@@ -40,6 +43,30 @@ async def kpi() -> dict:
             {"name": "催收回收率", "value": "85.2%", "change": "-2.1%", "trend": "down", "alert": False},
         ],
     }
+
+
+@app.get("/api/cases")
+async def list_cases() -> dict:
+    """Return all historical cases (metadata + snippet, no full content).
+    Frontend uses this for id→title mapping in AnomalyCard references."""
+    cases = load_all_cases()
+    return {
+        "count": len(cases),
+        "cases": [
+            {k: v for k, v in c.items() if k != "content"}
+            for c in cases
+        ],
+    }
+
+
+@app.get("/api/cases/{case_id}")
+async def get_case_detail(case_id: str) -> dict:
+    """Return a single case with full markdown content. Used for
+    AnomalyCard click-to-expand in the UI."""
+    case = get_case(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"case not found: {case_id}")
+    return case
 
 
 class AnalyzeRequest(BaseModel):

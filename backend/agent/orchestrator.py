@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 from uuid import uuid4
 
 from ..config import settings
@@ -32,6 +32,12 @@ def _summarize_tool_result(name: str, result: dict) -> str:
             f"✅ 报告生成完成（{len(result.get('anomalies', []))} 异常 / "
             f"{len(result.get('action_items', []))} 建议）"
         )
+    if name == "rag_search":
+        hits = result.get("hits", [])
+        if not hits:
+            return "✅ 检索完成，未找到相关案例"
+        titles = "、".join(h.get("title", h.get("id", "?")) for h in hits)
+        return f"✅ 命中 {len(hits)} 个案例：{titles}"
     return f"✅ {str(result)[:MAX_TOOL_RESULT_SUMMARY]}"
 
 
@@ -112,11 +118,16 @@ async def run_agent(user_query: str) -> AsyncGenerator[SSEEvent, None]:
                     "name": tool_name, "error": str(result["error"]), "step": step,
                 })
             else:
-                yield SSEEvent(type="tool_result", data={
+                event_data: dict[str, Any] = {
                     "name": tool_name,
                     "summary": _summarize_tool_result(tool_name, result),
                     "step": step,
-                })
+                }
+                # For rag_search, also attach the hits so the UI can render
+                # clickable case cards inline (instead of dumping raw JSON).
+                if tool_name == "rag_search" and "hits" in result:
+                    event_data["hits"] = result["hits"]
+                yield SSEEvent(type="tool_result", data=event_data)
 
             trace.steps.append(TraceStep(
                 step_number=step,
