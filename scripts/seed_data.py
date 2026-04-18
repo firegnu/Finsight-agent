@@ -42,6 +42,17 @@ CREATE TABLE industry_benchmark (
     updated_at TEXT NOT NULL,
     description TEXT
 );
+
+CREATE TABLE approvals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    report_id TEXT UNIQUE NOT NULL,
+    trace_id TEXT,
+    decision TEXT NOT NULL CHECK (decision IN ('approved', 'rejected')),
+    decided_by TEXT,
+    note TEXT,
+    decided_at TEXT NOT NULL
+);
+CREATE INDEX idx_approvals_report ON approvals(report_id);
 """
 
 # Industry benchmarks (synthetic but plausible values for retail banking credit cards)

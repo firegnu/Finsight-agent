@@ -7,8 +7,11 @@ from pydantic import BaseModel
 
 from fastapi import HTTPException
 
+from typing import Literal
+
 from .agent.orchestrator import run_agent
 from .config import settings
+from .db.approvals import get_decision, revoke_decision, submit_decision
 from .db.kpi import aggregate_kpi
 from .knowledge_base.loader import get_case, load_all_cases
 
@@ -60,6 +63,43 @@ async def get_case_detail(case_id: str) -> dict:
     if not case:
         raise HTTPException(status_code=404, detail=f"case not found: {case_id}")
     return case
+
+
+class ApprovalRequest(BaseModel):
+    decision: Literal["approved", "rejected"]
+    trace_id: str | None = None
+    decided_by: str | None = None
+    note: str | None = None
+
+
+@app.post("/api/approve/{report_id}")
+async def approve_report(report_id: str, req: ApprovalRequest) -> dict:
+    """Record a HITL approval decision for a report. Upsert: the latest
+    POST for a report_id overrides prior decisions."""
+    return submit_decision(
+        report_id=report_id,
+        decision=req.decision,
+        trace_id=req.trace_id,
+        decided_by=req.decided_by,
+        note=req.note,
+    )
+
+
+@app.get("/api/approve/{report_id}")
+async def get_approval(report_id: str) -> dict:
+    """Return the current approval decision for a report, or status='pending'
+    when no decision has been recorded yet."""
+    decision = get_decision(report_id)
+    if not decision:
+        return {"report_id": report_id, "decision": None}
+    return decision
+
+
+@app.delete("/api/approve/{report_id}")
+async def revoke_approval(report_id: str) -> dict:
+    """Delete a recorded approval (allow the report to return to pending)."""
+    removed = revoke_decision(report_id)
+    return {"report_id": report_id, "revoked": removed}
 
 
 class AnalyzeRequest(BaseModel):
