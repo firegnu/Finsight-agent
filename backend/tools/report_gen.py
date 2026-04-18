@@ -12,7 +12,7 @@ from ..llm.client import MODEL, chat
 
 logger = logging.getLogger("finsight.report_gen")
 
-MAX_RETRIES = 1
+MAX_RETRIES = 2
 
 
 REPORT_SYS_PROMPT = """你是报告生成器。基于用户提供的分析发现，生成一份结构化 JSON 报告。
@@ -86,7 +86,7 @@ async def run(findings_summary: str) -> dict:
                 {"role": "user", "content": user_msg},
             ],
             temperature=0.3,
-            max_tokens=4096,
+            max_tokens=8192,
         )
         last_raw = response.choices[0].message.content or "{}"
         try:
@@ -97,7 +97,7 @@ async def run(findings_summary: str) -> dict:
             logger.info("report_gen success on attempt %d", attempt + 1)
             return report.model_dump()
         except (json.JSONDecodeError, ValidationError) as e:
-            last_err = f"{type(e).__name__}: {str(e)[:400]}"
+            last_err = f"{type(e).__name__}: {str(e)[:2000]}"
             logger.warning("report_gen attempt %d failed: %s", attempt + 1, last_err)
 
     return {
