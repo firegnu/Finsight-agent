@@ -15,6 +15,7 @@ from .db.approvals import get_decision, revoke_decision, submit_decision
 from .db.kpi import aggregate_kpi
 from .db.traces import delete_trace, get_trace_detail, list_traces
 from .knowledge_base.loader import get_case, load_all_cases
+from .skills.loader import get_skill, load_all_skills
 
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger("finsight")
@@ -40,6 +41,42 @@ async def kpi() -> dict:
     Latest month is aggregated across all regions; change% is vs previous month;
     alert flags are driven by the industry_benchmark table's direction field."""
     return aggregate_kpi()
+
+
+@app.get("/api/skills")
+async def list_skills() -> dict:
+    """Return all available methodology skills (metadata + snippet of content)."""
+    skills = load_all_skills()
+    return {
+        "count": len(skills),
+        "skills": [
+            {
+                "name": s["name"],
+                "description": s["description"],
+                "category": s["category"],
+                "applicable_metrics": s["applicable_metrics"],
+                "source_file": s["source_file"],
+                "snippet": _skill_snippet(s["content"]),
+            }
+            for s in skills
+        ],
+    }
+
+
+@app.get("/api/skills/{name}")
+async def get_skill_detail(name: str) -> dict:
+    """Return a single skill with full markdown content."""
+    skill = get_skill(name)
+    if not skill:
+        raise HTTPException(status_code=404, detail=f"skill not found: {name}")
+    return skill
+
+
+def _skill_snippet(content: str, n: int = 220) -> str:
+    lines = [l for l in content.split("\n") if l.strip() and not l.startswith("#")]
+    text = " ".join(lines[:5])
+    compact = " ".join(text.split())
+    return compact[:n] + ("…" if len(compact) > n else "")
 
 
 @app.get("/api/cases")
