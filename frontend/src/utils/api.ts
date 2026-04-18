@@ -1,4 +1,6 @@
 import type {
+  ApprovalDecision,
+  ApprovalRecord,
   CaseDetail,
   CasesResponse,
   HealthResponse,
@@ -27,4 +29,31 @@ export async function fetchCaseDetail(id: string): Promise<CaseDetail> {
   const resp = await fetch(`/api/cases/${encodeURIComponent(id)}`);
   if (!resp.ok) throw new Error(`Case fetch failed: ${resp.status}`);
   return resp.json();
+}
+
+export async function fetchApproval(reportId: string): Promise<ApprovalRecord> {
+  const resp = await fetch(`/api/approve/${encodeURIComponent(reportId)}`);
+  if (!resp.ok) throw new Error(`Approval fetch failed: ${resp.status}`);
+  return resp.json();
+}
+
+export async function submitApproval(
+  reportId: string,
+  decision: ApprovalDecision,
+  extras?: { trace_id?: string; decided_by?: string; note?: string },
+): Promise<ApprovalRecord> {
+  const resp = await fetch(`/api/approve/${encodeURIComponent(reportId)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ decision, ...extras }),
+  });
+  if (!resp.ok) throw new Error(`Approval submit failed: ${resp.status}`);
+  return resp.json();
+}
+
+export async function revokeApproval(reportId: string): Promise<void> {
+  const resp = await fetch(`/api/approve/${encodeURIComponent(reportId)}`, {
+    method: "DELETE",
+  });
+  if (!resp.ok) throw new Error(`Approval revoke failed: ${resp.status}`);
 }

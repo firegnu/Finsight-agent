@@ -100,6 +100,7 @@ export function ReportPanel({ report, status, casesById, onOpenCase }: Props) {
       <div className="flex-none px-4 py-3 border-t border-slate-200 bg-slate-50">
         <ApprovalButtons
           reportId={report.report_id}
+          traceId={report.trace_id}
           requiresReview={report.requires_human_review}
         />
       </div>

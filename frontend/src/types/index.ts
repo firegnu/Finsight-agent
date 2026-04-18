@@ -110,3 +110,15 @@ export interface RagHit {
   score: number;
   snippet: string;
 }
+
+// HITL approval
+export type ApprovalDecision = "approved" | "rejected";
+
+export interface ApprovalRecord {
+  report_id: string;
+  trace_id: string | null;
+  decision: ApprovalDecision | null;
+  decided_by: string | null;
+  note: string | null;
+  decided_at?: string;
+}
