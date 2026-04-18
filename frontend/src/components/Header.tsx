@@ -4,10 +4,11 @@ import { fetchHealth } from "../utils/api";
 
 interface Props {
   caseCount?: number;
+  skillCount?: number;
   onOpenHistory?: () => void;
 }
 
-export function Header({ caseCount = 0, onOpenHistory }: Props) {
+export function Header({ caseCount = 0, skillCount = 0, onOpenHistory }: Props) {
   const [health, setHealth] = useState<HealthResponse | null>(null);
 
   useEffect(() => {
@@ -38,6 +39,15 @@ export function Header({ caseCount = 0, onOpenHistory }: Props) {
             <span>📋</span>
             <span className="font-medium">历史分析</span>
           </button>
+        )}
+        {skillCount > 0 && (
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 text-amber-700 border border-amber-100"
+            title="Agent 方法论 skills：按名字加载 SOP 指引"
+          >
+            <span>🎯</span>
+            <span className="font-medium">{skillCount} 个 skills</span>
+          </div>
         )}
         {caseCount > 0 && (
           <div

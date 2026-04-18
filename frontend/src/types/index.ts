@@ -111,6 +111,25 @@ export interface RagHit {
   snippet: string;
 }
 
+// Skill metadata (from /api/skills and use_skill tool_result.data.skill)
+export interface SkillMeta {
+  name: string;
+  description: string;
+  category: string;
+  applicable_metrics: string[];
+  source_file?: string;
+  snippet?: string;
+}
+
+export interface SkillDetail extends SkillMeta {
+  content: string;
+}
+
+export interface SkillsResponse {
+  count: number;
+  skills: SkillMeta[];
+}
+
 // Trace (persisted agent run history)
 export interface TraceSummary {
   trace_id: string;

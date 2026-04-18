@@ -5,6 +5,8 @@ import type {
   CasesResponse,
   HealthResponse,
   KPIResponse,
+  SkillDetail,
+  SkillsResponse,
   TraceDetail,
   TracesListResponse,
 } from "../types";
@@ -77,4 +79,16 @@ export async function deleteTrace(id: string): Promise<void> {
     method: "DELETE",
   });
   if (!resp.ok) throw new Error(`Trace delete failed: ${resp.status}`);
+}
+
+export async function fetchSkills(): Promise<SkillsResponse> {
+  const resp = await fetch("/api/skills");
+  if (!resp.ok) throw new Error(`Skills fetch failed: ${resp.status}`);
+  return resp.json();
+}
+
+export async function fetchSkillDetail(name: string): Promise<SkillDetail> {
+  const resp = await fetch(`/api/skills/${encodeURIComponent(name)}`);
+  if (!resp.ok) throw new Error(`Skill fetch failed: ${resp.status}`);
+  return resp.json();
 }

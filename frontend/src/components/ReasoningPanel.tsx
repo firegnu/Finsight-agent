@@ -1,14 +1,21 @@
 import { useEffect, useRef } from "react";
-import type { AgentStatus, RagHit, SSEEvent } from "../types";
+import type { AgentStatus, RagHit, SkillMeta, SSEEvent } from "../types";
 
 interface Props {
   events: SSEEvent[];
   status: AgentStatus;
   error: string | null;
   onOpenCase: (id: string) => void;
+  onOpenSkill: (name: string) => void;
 }
 
-export function ReasoningPanel({ events, status, error, onOpenCase }: Props) {
+export function ReasoningPanel({
+  events,
+  status,
+  error,
+  onOpenCase,
+  onOpenSkill,
+}: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,7 +37,12 @@ export function ReasoningPanel({ events, status, error, onOpenCase }: Props) {
           </div>
         )}
         {events.map((e, i) => (
-          <EventItem key={i} event={e} onOpenCase={onOpenCase} />
+          <EventItem
+            key={i}
+            event={e}
+            onOpenCase={onOpenCase}
+            onOpenSkill={onOpenSkill}
+          />
         ))}
         {error && (
           <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
@@ -60,9 +72,11 @@ function asString(v: unknown, fallback = ""): string {
 function EventItem({
   event,
   onOpenCase,
+  onOpenSkill,
 }: {
   event: SSEEvent;
   onOpenCase: (id: string) => void;
+  onOpenSkill: (name: string) => void;
 }) {
   const { type, data } = event;
   switch (type) {
@@ -98,6 +112,36 @@ function EventItem({
     case "tool_result": {
       const name = asString(data.name);
       const summary = asString(data.summary);
+      // Rich rendering for use_skill: show clickable skill card
+      if (name === "use_skill" && data.skill) {
+        const skill = data.skill as Partial<SkillMeta>;
+        return (
+          <div className="text-sm bg-amber-50/60 border border-amber-200 rounded p-2">
+            <div className="text-xs text-amber-700 font-medium mb-1">
+              🎯 已加载方法论 skill
+            </div>
+            <button
+              type="button"
+              onClick={() => skill.name && onOpenSkill(skill.name)}
+              className="w-full text-left bg-white border border-amber-100 rounded p-2 hover:border-amber-400 hover:shadow-sm transition-all group"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-slate-800 group-hover:text-amber-700">
+                  {skill.name}
+                </span>
+                <span className="text-[10px] text-amber-600 font-mono">
+                  {skill.category}
+                </span>
+              </div>
+              {skill.description && (
+                <div className="text-xs text-slate-600 mt-1 line-clamp-2">
+                  {skill.description}
+                </div>
+              )}
+            </button>
+          </div>
+        );
+      }
       // Rich rendering for rag_search: show clickable hit cards
       if (name === "rag_search" && Array.isArray(data.hits)) {
         const hits = data.hits as RagHit[];

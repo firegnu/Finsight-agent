@@ -5,16 +5,20 @@ import { Header } from "./components/Header";
 import { KPICards } from "./components/KPICards";
 import { ReasoningPanel } from "./components/ReasoningPanel";
 import { ReportPanel } from "./components/ReportPanel";
+import { SkillDetailModal } from "./components/SkillDetailModal";
 import { TraceHistoryModal } from "./components/TraceHistoryModal";
 import { useCases } from "./hooks/useCases";
+import { useSkills } from "./hooks/useSkills";
 import { useSSE } from "./hooks/useSSE";
 import type { AnalysisReport } from "./types";
 
 export default function App() {
   const { events, status, error, analyze } = useSSE();
   const cases = useCases();
+  const skills = useSkills();
   const [input, setInput] = useState("");
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [selectedSkillName, setSelectedSkillName] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const report = useMemo<AnalysisReport | null>(() => {
@@ -36,6 +40,7 @@ export default function App() {
     <div className="h-full flex flex-col bg-slate-50">
       <Header
         caseCount={cases.cases.length}
+        skillCount={skills.skills.length}
         onOpenHistory={() => setHistoryOpen(true)}
       />
       <div className="flex-none p-4 border-b border-slate-200 bg-white">
@@ -48,6 +53,7 @@ export default function App() {
             status={status}
             error={error}
             onOpenCase={setSelectedCaseId}
+            onOpenSkill={setSelectedSkillName}
           />
         </div>
         <div className="flex-1 overflow-hidden bg-white">
@@ -70,6 +76,10 @@ export default function App() {
       <CaseDetailModal
         caseId={selectedCaseId}
         onClose={() => setSelectedCaseId(null)}
+      />
+      <SkillDetailModal
+        name={selectedSkillName}
+        onClose={() => setSelectedSkillName(null)}
       />
       <TraceHistoryModal
         open={historyOpen}
