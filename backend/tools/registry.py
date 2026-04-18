@@ -10,6 +10,7 @@ from . import (
     rag_search,
     report_gen,
     sql_query,
+    use_skill,
 )
 
 
@@ -17,6 +18,7 @@ ToolHandler = Callable[..., Awaitable[dict]]
 
 
 TOOL_DEFINITIONS: list[dict] = [
+    use_skill.TOOL_SCHEMA,
     sql_query.TOOL_SCHEMA,
     anomaly_detect.TOOL_SCHEMA,
     financial_api.TOOL_SCHEMA,
@@ -26,6 +28,7 @@ TOOL_DEFINITIONS: list[dict] = [
 
 
 TOOL_HANDLERS: dict[str, ToolHandler] = {
+    "use_skill": use_skill.run,
     "sql_query": sql_query.run,
     "anomaly_detect": anomaly_detect.run,
     "financial_api": financial_api.run,

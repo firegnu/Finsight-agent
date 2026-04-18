@@ -42,6 +42,10 @@ def _summarize_tool_result(name: str, result: dict) -> str:
             return "✅ 检索完成，未找到相关案例"
         titles = "、".join(h.get("title", h.get("id", "?")) for h in hits)
         return f"✅ 命中 {len(hits)} 个案例：{titles}"
+    if name == "use_skill":
+        skill_name = result.get("name", "?")
+        category = result.get("category", "")
+        return f"✅ 已加载 skill: {skill_name} ({category})"
     return f"✅ {str(result)[:MAX_TOOL_RESULT_SUMMARY]}"
 
 
@@ -132,6 +136,15 @@ async def run_agent(user_query: str) -> AsyncGenerator[SSEEvent, None]:
                 # clickable case cards inline (instead of dumping raw JSON).
                 if tool_name == "rag_search" and "hits" in result:
                     event_data["hits"] = result["hits"]
+                # For use_skill, attach skill metadata so the UI can render a
+                # clickable skill badge (content goes to the Agent's context
+                # but frontend only needs name/description for the inline card).
+                if tool_name == "use_skill" and "error" not in result:
+                    event_data["skill"] = {
+                        "name": result.get("name"),
+                        "description": result.get("description", ""),
+                        "category": result.get("category", ""),
+                    }
                 yield SSEEvent(type="tool_result", data=event_data)
 
             trace.steps.append(TraceStep(
