@@ -2759,6 +2759,33 @@ git push --tags
 9. **真实 KPI 聚合**
    - `/api/kpi` 改为从 SQLite 最新月份实时聚合
 
+10. **Claude Code Skills（`.claude/skills/`）**
+    - **格式参考**：Anthropic 官方开源的 `anthropics/financial-services-plugins` 里的 `SKILL.md` 格式（YAML frontmatter + markdown 流程文档）
+    - **领域适配**：官方 plugin 聚焦投行建模（DCF/LBO/comps），不直接用；我们面向零售银行运营监控，自写针对性 skills
+    - **预计产出 5-7 个 skills**，两大类：
+      - *开发工作流 skills*：
+        - `add-new-tool.md` — 给 Agent 加新工具的约定（对齐 `tools/registry.py`）
+        - `switch-provider.md` — 切换 LLM provider 的 checklist
+        - `debug-sse.md` — SSE 断流排查
+        - `deploy-vps.md` — VPS 部署步骤（Task 7 完成后落地）
+      - *业务方法论 skills*（Agent 可查阅的领域知识）：
+        - `anomaly-investigation.md` — 异常检测后的调查步骤
+        - `root-cause-reasoning.md` — 根因推理框架（观察 → 假设 → 验证）
+        - `cohort-comparison.md` — 区域/客群对比分析方法
+    - **在 README 和项目展示时明确**：本项目的 skills 参考 Anthropic 官方 financial-services-plugins 的格式约定做领域适配（投行建模 → 零售银行运营监控），体现对生态 + 设计哲学 + 领域落地的综合理解
+    - **工时**：~2h
+
+### Week 2 推荐执行顺序
+
+```
+Day 3: #1 RAG 历史案例库                  (P0，最大叙事升级)
+Day 4: #2 financial_api + #9 真实 KPI     (两个快赢，~3h)
+Day 5: #6 Docker Compose                  (为 VPS 做准备)
+Day 6: #7 VPS 部署 + #3 Provider 切换     (合在一起：线上一切就绪)
+Day 7: #4 HITL + #5 Trace 持久化 + #10 Skills (打磨 + 加分项)
+Day 8+: #8 UI 视觉升级                    (Claude Design 主导)
+```
+
 ---
 
 ## 5. 执行约定

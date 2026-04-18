@@ -139,6 +139,7 @@ LLM_MODEL=gpt-4o-mini
   - KPI 卡片接真实 SQLite 聚合
   - Docker Compose + VPS 部署
   - UI 用 Claude Design 重做视觉
+  - Claude Code Skills（`.claude/skills/`）——参考 Anthropic 官方 `financial-services-plugins` 格式，为零售银行运营场景做领域适配
 
 ## 目录结构
 
