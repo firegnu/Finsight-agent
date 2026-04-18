@@ -2743,14 +2743,19 @@ git push --tags
    - `/api/traces` 列表 + `/api/traces/{id}` 详情
    - 前端新增 `/traces` 路由 + 页面
 
-6. **Docker Compose 一键启动**
-   - `backend/Dockerfile` + `frontend/Dockerfile`
-   - `docker-compose.yml`
+6. **FastAPI 托管前端静态文件**（替代原 Docker 方案）
+   - `backend/main.py` 加 `StaticFiles` 挂载 `frontend/dist`
+   - 生产模式：单进程托管 API + 静态 UI（同源、无需 CORS、无需 Nginx）
+   - 开发模式不变（Vite dev server 代理 /api）
+   - 文档：`docs/deployment.md` 写构建步骤
 
-7. **VPS 部署**
-   - 阿里云/腾讯云轻量 + Docker + Nginx 反向代理
-   - HTTPS（Let's Encrypt）
-   - 线上演示链接
+7. **Windows 4060Ti 机器部署**（替代原 VPS 方案）
+   - 目标机器：Windows + RTX 4060Ti 16GB + CUDA + 公网 IP
+   - 推理后端：Ollama（`qwen2.5:14b` Chat + `nomic-embed-text` Embedding，均本地 localhost:11434）
+   - 进程管理：NSSM 把 `uvicorn` 装成 Windows 系统服务（开机自启）
+   - 公网访问：防火墙开 8000 端口，`http://公网IP:8000` 直接访问（HTTP 够用，SSE 兼容）
+   - 零依赖：无 Docker、无 Nginx、无 Cloudflare Tunnel、无域名、无 HTTPS、无云 API 费用
+   - 部署流程：RDP → `git clone` → conda env + pip install → `npm run build` → `scripts/seed_data.py` + `scripts/index_cases.py` → NSSM 服务化 → 测试公网访问
 
 8. **UI 重设计（claude design）**
    - 把这两天的裸 Tailwind 换成 polished 视觉
@@ -2767,7 +2772,7 @@ git push --tags
         - `add-new-tool.md` — 给 Agent 加新工具的约定（对齐 `tools/registry.py`）
         - `switch-provider.md` — 切换 LLM provider 的 checklist
         - `debug-sse.md` — SSE 断流排查
-        - `deploy-vps.md` — VPS 部署步骤（Task 7 完成后落地）
+        - `deploy-windows.md` — Windows 4060Ti 部署步骤（NSSM + 防火墙 + Ollama，Task 7 完成后落地）
       - *业务方法论 skills*（Agent 可查阅的领域知识）：
         - `anomaly-investigation.md` — 异常检测后的调查步骤
         - `root-cause-reasoning.md` — 根因推理框架（观察 → 假设 → 验证）
@@ -2778,13 +2783,19 @@ git push --tags
 ### Week 2 推荐执行顺序
 
 ```
-Day 3: #1 RAG 历史案例库                  (P0，最大叙事升级)
+Day 3: #1 RAG 历史案例库                  (P0，最大叙事升级，~4h)
 Day 4: #2 financial_api + #9 真实 KPI     (两个快赢，~3h)
-Day 5: #6 Docker Compose                  (为 VPS 做准备)
-Day 6: #7 VPS 部署 + #3 Provider 切换     (合在一起：线上一切就绪)
-Day 7: #4 HITL + #5 Trace 持久化 + #10 Skills (打磨 + 加分项)
+Day 5: #6 FastAPI 托管前端 + 部署手册     (~2h)
+Day 6: #7 Windows 机器部署 + #3 Provider 切换 (线上可演示，~4h)
+Day 7: #4 HITL + #5 Trace 持久化 + #10 Skills (打磨 + 加分项，~7h)
 Day 8+: #8 UI 视觉升级                    (Claude Design 主导)
 ```
+
+### 部署目标环境
+
+- **开发机**（Mac M4 Max 128GB）：LM Studio + GLM-4.7-Flash
+- **部署机**（Windows + RTX 4060Ti 16GB + 公网 IP + 常开）：Ollama + qwen2.5:14b + nomic-embed-text
+- **切换方式**：改 `.env` 三个变量（`LLM_BASE_URL` / `LLM_MODEL` / embedding 相关），代码零改动
 
 ---
 
