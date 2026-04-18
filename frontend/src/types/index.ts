@@ -76,3 +76,37 @@ export interface HealthResponse {
 }
 
 export type AgentStatus = "idle" | "running" | "done" | "error";
+
+// RAG case library
+export interface CaseMeta {
+  id: string;
+  title: string;
+  tags: string[];
+  region: string;
+  metric: string;
+  period: string;
+  severity: string;
+  source_file: string;
+  snippet: string;
+}
+
+export interface CaseDetail extends CaseMeta {
+  content: string;
+}
+
+export interface CasesResponse {
+  count: number;
+  cases: CaseMeta[];
+}
+
+// A single rag_search hit embedded in the tool_result SSE event
+export interface RagHit {
+  id: string;
+  title: string;
+  tags: string[];
+  region: string;
+  metric: string;
+  period: string;
+  score: number;
+  snippet: string;
+}
