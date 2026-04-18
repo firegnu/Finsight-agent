@@ -59,5 +59,30 @@ async def chat(**kwargs) -> ChatCompletion:
     return _normalize(response)
 
 
+# ---- Embedding client (may point to a different provider than chat) ----
+
+_embed_client = AsyncOpenAI(
+    base_url=settings.embedding_base_url,
+    api_key=settings.embedding_api_key,
+)
+
+EMBEDDING_MODEL = settings.llm_embedding_model
+
+
+async def embed(texts: list[str], model: str | None = None) -> list[list[float]]:
+    """Create embeddings for a batch of texts.
+
+    Returns list of float vectors aligned with `texts` order. Uses the embedding
+    provider configured in settings (defaults to same as chat provider).
+    """
+    if not texts:
+        return []
+    response = await _embed_client.embeddings.create(
+        model=model or EMBEDDING_MODEL,
+        input=texts,
+    )
+    return [item.embedding for item in response.data]
+
+
 # Re-export raw client for advanced use (e.g. streaming). Most callers should use `chat`.
 llm = _raw_client
