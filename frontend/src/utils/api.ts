@@ -5,6 +5,8 @@ import type {
   CasesResponse,
   HealthResponse,
   KPIResponse,
+  TraceDetail,
+  TracesListResponse,
 } from "../types";
 
 export async function fetchKPI(): Promise<KPIResponse> {
@@ -56,4 +58,23 @@ export async function revokeApproval(reportId: string): Promise<void> {
     method: "DELETE",
   });
   if (!resp.ok) throw new Error(`Approval revoke failed: ${resp.status}`);
+}
+
+export async function fetchTraces(limit = 50): Promise<TracesListResponse> {
+  const resp = await fetch(`/api/traces?limit=${limit}`);
+  if (!resp.ok) throw new Error(`Traces fetch failed: ${resp.status}`);
+  return resp.json();
+}
+
+export async function fetchTraceDetail(id: string): Promise<TraceDetail> {
+  const resp = await fetch(`/api/traces/${encodeURIComponent(id)}`);
+  if (!resp.ok) throw new Error(`Trace fetch failed: ${resp.status}`);
+  return resp.json();
+}
+
+export async function deleteTrace(id: string): Promise<void> {
+  const resp = await fetch(`/api/traces/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  if (!resp.ok) throw new Error(`Trace delete failed: ${resp.status}`);
 }

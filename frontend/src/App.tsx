@@ -5,6 +5,7 @@ import { Header } from "./components/Header";
 import { KPICards } from "./components/KPICards";
 import { ReasoningPanel } from "./components/ReasoningPanel";
 import { ReportPanel } from "./components/ReportPanel";
+import { TraceHistoryModal } from "./components/TraceHistoryModal";
 import { useCases } from "./hooks/useCases";
 import { useSSE } from "./hooks/useSSE";
 import type { AnalysisReport } from "./types";
@@ -14,6 +15,7 @@ export default function App() {
   const cases = useCases();
   const [input, setInput] = useState("");
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const report = useMemo<AnalysisReport | null>(() => {
     for (let i = events.length - 1; i >= 0; i--) {
@@ -32,7 +34,10 @@ export default function App() {
 
   return (
     <div className="h-full flex flex-col bg-slate-50">
-      <Header caseCount={cases.cases.length} />
+      <Header
+        caseCount={cases.cases.length}
+        onOpenHistory={() => setHistoryOpen(true)}
+      />
       <div className="flex-none p-4 border-b border-slate-200 bg-white">
         <KPICards />
       </div>
@@ -65,6 +70,10 @@ export default function App() {
       <CaseDetailModal
         caseId={selectedCaseId}
         onClose={() => setSelectedCaseId(null)}
+      />
+      <TraceHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
       />
     </div>
   );

@@ -4,9 +4,10 @@ import { fetchHealth } from "../utils/api";
 
 interface Props {
   caseCount?: number;
+  onOpenHistory?: () => void;
 }
 
-export function Header({ caseCount = 0 }: Props) {
+export function Header({ caseCount = 0, onOpenHistory }: Props) {
   const [health, setHealth] = useState<HealthResponse | null>(null);
 
   useEffect(() => {
@@ -27,6 +28,17 @@ export function Header({ caseCount = 0 }: Props) {
         </span>
       </div>
       <div className="flex items-center gap-4 text-xs text-slate-500">
+        {onOpenHistory && (
+          <button
+            type="button"
+            onClick={onOpenHistory}
+            className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-slate-100 text-slate-600 transition-colors"
+            title="查看历史分析记录"
+          >
+            <span>📋</span>
+            <span className="font-medium">历史分析</span>
+          </button>
+        )}
         {caseCount > 0 && (
           <div
             className="flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50 text-indigo-700 border border-indigo-100"

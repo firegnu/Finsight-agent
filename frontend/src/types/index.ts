@@ -111,6 +111,38 @@ export interface RagHit {
   snippet: string;
 }
 
+// Trace (persisted agent run history)
+export interface TraceSummary {
+  trace_id: string;
+  user_query: string;
+  llm_model: string | null;
+  status: string | null;
+  total_latency_ms: number;
+  step_count: number;
+  started_at: string;
+  completed_at: string | null;
+}
+
+export interface TraceStepRecord {
+  step_number: number;
+  action_type: string;
+  tool_name: string | null;
+  tool_input: Record<string, unknown> | null;
+  tool_output_summary: string | null;
+  latency_ms: number;
+  timestamp: string;
+}
+
+export interface TraceDetail extends TraceSummary {
+  steps: TraceStepRecord[];
+  final_report: AnalysisReport | null;
+}
+
+export interface TracesListResponse {
+  count: number;
+  traces: TraceSummary[];
+}
+
 // HITL approval
 export type ApprovalDecision = "approved" | "rejected";
 
