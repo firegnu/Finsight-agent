@@ -32,7 +32,7 @@ REPORT_SYS_PROMPT = """你是报告生成器。基于用户提供的分析发现
       "historical_mean": number,
       "historical_std": number,
       "deviation_sigma": number,
-      "baseline_value": null,
+      "baseline_value": "number 或 null——行业基准值（来自 financial_api），若未查询则为 null",
       "severity": "low | medium | high | critical",
       "root_cause_hypothesis": "string，基于数据、历史案例和业务常识的根因推测",
       "references": ["string，RAG 检索到的历史案例 id，如 'east-2024-q3-overdue-spike'；无则空数组"]
@@ -57,7 +57,8 @@ REPORT_SYS_PROMPT = """你是报告生成器。基于用户提供的分析发现
 - 每个异常至少配一个行动建议
 - 只输出 JSON，不要任何解释、不要 markdown 代码块
 - 数字字段保持原始精度
-- baseline_value 字段本次保持 null（待 financial_api 工具上线后填充）
+- baseline_value 字段：如 findings_summary 里带了 financial_api 返回的行业基准（benchmark_value），
+  填入对应 anomaly 的 baseline_value；未查询则 null
 - references 字段：如 findings_summary 里带了历史案例 id（RAG 检索结果），在对应 anomaly
   下填入；根因推测也要结合这些案例的经验，在 root_cause_hypothesis 里体现"历史上类似情况..."
 """
