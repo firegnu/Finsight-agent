@@ -1,4 +1,4 @@
-import type { AgentStatus, AnalysisReport } from "../types";
+import type { AgentStatus, AnalysisReport, CaseMeta } from "../types";
 import { ActionItemCard } from "./ActionItemCard";
 import { AnomalyCard } from "./AnomalyCard";
 import { ApprovalButtons } from "./ApprovalButtons";
@@ -6,9 +6,11 @@ import { ApprovalButtons } from "./ApprovalButtons";
 interface Props {
   report: AnalysisReport | null;
   status: AgentStatus;
+  casesById: Record<string, CaseMeta>;
+  onOpenCase: (id: string) => void;
 }
 
-export function ReportPanel({ report, status }: Props) {
+export function ReportPanel({ report, status, casesById, onOpenCase }: Props) {
   if (!report) {
     return (
       <div className="h-full flex items-center justify-center text-slate-400 text-sm">
@@ -66,7 +68,12 @@ export function ReportPanel({ report, status }: Props) {
           <Section title={`异常项 (${report.anomalies.length})`}>
             <div className="space-y-2">
               {report.anomalies.map((a, i) => (
-                <AnomalyCard key={i} anomaly={a} />
+                <AnomalyCard
+                  key={i}
+                  anomaly={a}
+                  casesById={casesById}
+                  onOpenCase={onOpenCase}
+                />
               ))}
             </div>
           </Section>

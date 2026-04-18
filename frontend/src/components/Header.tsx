@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import type { HealthResponse } from "../types";
 import { fetchHealth } from "../utils/api";
 
-export function Header() {
+interface Props {
+  caseCount?: number;
+}
+
+export function Header({ caseCount = 0 }: Props) {
   const [health, setHealth] = useState<HealthResponse | null>(null);
 
   useEffect(() => {
@@ -22,11 +26,24 @@ export function Header() {
           金融数据智能分析
         </span>
       </div>
-      <div className="flex items-center gap-2 text-xs text-slate-500 font-mono">
-        <span
-          className={`w-2 h-2 rounded-full ${health ? "bg-green-500" : "bg-slate-300"}`}
-        />
-        <span>Model: {modelLabel}</span>
+      <div className="flex items-center gap-4 text-xs text-slate-500">
+        {caseCount > 0 && (
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50 text-indigo-700 border border-indigo-100"
+            title="RAG 案例库：向量检索支持根因推理"
+          >
+            <span>📚</span>
+            <span className="font-medium">{caseCount} 个历史案例</span>
+            <span className="text-indigo-400">·</span>
+            <span className="font-mono text-[10px]">768d · cosine</span>
+          </div>
+        )}
+        <div className="flex items-center gap-2 font-mono">
+          <span
+            className={`w-2 h-2 rounded-full ${health ? "bg-green-500" : "bg-slate-300"}`}
+          />
+          <span>Model: {modelLabel}</span>
+        </div>
       </div>
     </header>
   );

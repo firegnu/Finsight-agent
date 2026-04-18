@@ -1,4 +1,4 @@
-import type { AnomalyFinding, Severity } from "../types";
+import type { AnomalyFinding, CaseMeta, Severity } from "../types";
 
 const SEVERITY_STYLE: Record<Severity, string> = {
   critical: "bg-red-100 border-red-400 text-red-900",
@@ -45,7 +45,13 @@ function formatValue(metric: string, value: number): string {
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
-export function AnomalyCard({ anomaly }: { anomaly: AnomalyFinding }) {
+interface Props {
+  anomaly: AnomalyFinding;
+  casesById?: Record<string, CaseMeta>;
+  onOpenCase?: (id: string) => void;
+}
+
+export function AnomalyCard({ anomaly, casesById, onOpenCase }: Props) {
   const label = METRIC_LABEL[anomaly.metric] ?? anomaly.metric;
 
   return (
@@ -92,8 +98,28 @@ export function AnomalyCard({ anomaly }: { anomaly: AnomalyFinding }) {
           </div>
         )}
         {anomaly.references.length > 0 && (
-          <div className="text-[11px] mt-1 text-slate-600">
-            参考案例: {anomaly.references.join(" · ")}
+          <div className="mt-2">
+            <div className="text-[11px] font-semibold text-slate-600 mb-1">
+              📚 参考案例 ({anomaly.references.length})
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {anomaly.references.map((refId) => {
+                const meta = casesById?.[refId];
+                const title = meta?.title ?? refId;
+                return (
+                  <button
+                    key={refId}
+                    type="button"
+                    onClick={() => onOpenCase?.(refId)}
+                    disabled={!onOpenCase}
+                    className="text-[11px] px-2 py-1 rounded bg-white/80 border border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 transition-colors text-slate-700 disabled:cursor-default"
+                    title={meta?.snippet ?? refId}
+                  >
+                    {title}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

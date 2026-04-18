@@ -1,13 +1,14 @@
 import { useEffect, useRef } from "react";
-import type { AgentStatus, SSEEvent } from "../types";
+import type { AgentStatus, RagHit, SSEEvent } from "../types";
 
 interface Props {
   events: SSEEvent[];
   status: AgentStatus;
   error: string | null;
+  onOpenCase: (id: string) => void;
 }
 
-export function ReasoningPanel({ events, status, error }: Props) {
+export function ReasoningPanel({ events, status, error, onOpenCase }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export function ReasoningPanel({ events, status, error }: Props) {
           </div>
         )}
         {events.map((e, i) => (
-          <EventItem key={i} event={e} />
+          <EventItem key={i} event={e} onOpenCase={onOpenCase} />
         ))}
         {error && (
           <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
@@ -56,7 +57,13 @@ function asString(v: unknown, fallback = ""): string {
   return typeof v === "string" ? v : fallback;
 }
 
-function EventItem({ event }: { event: SSEEvent }) {
+function EventItem({
+  event,
+  onOpenCase,
+}: {
+  event: SSEEvent;
+  onOpenCase: (id: string) => void;
+}) {
   const { type, data } = event;
   switch (type) {
     case "start":
@@ -88,15 +95,49 @@ function EventItem({ event }: { event: SSEEvent }) {
           </pre>
         </div>
       );
-    case "tool_result":
+    case "tool_result": {
+      const name = asString(data.name);
+      const summary = asString(data.summary);
+      // Rich rendering for rag_search: show clickable hit cards
+      if (name === "rag_search" && Array.isArray(data.hits)) {
+        const hits = data.hits as RagHit[];
+        return (
+          <div className="text-sm bg-indigo-50/60 border border-indigo-200 rounded p-2 space-y-1.5">
+            <div className="text-xs text-indigo-700 font-medium">
+              📚 RAG 检索返回 {hits.length} 个案例
+            </div>
+            {hits.map((h) => (
+              <button
+                key={h.id}
+                type="button"
+                onClick={() => onOpenCase(h.id)}
+                className="w-full text-left bg-white border border-indigo-100 rounded p-2 hover:border-indigo-400 hover:shadow-sm transition-all group"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-slate-800 text-sm group-hover:text-indigo-700">
+                    {h.title}
+                  </span>
+                  <span className="text-[10px] text-indigo-500 font-mono whitespace-nowrap">
+                    score {h.score.toFixed(2)}
+                  </span>
+                </div>
+                {h.snippet && (
+                  <div className="text-xs text-slate-500 mt-1 line-clamp-2">
+                    {h.snippet}
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        );
+      }
       return (
         <div className="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-2">
-          <span className="font-mono text-xs text-emerald-600 mr-2">
-            {asString(data.name)}
-          </span>
-          {asString(data.summary)}
+          <span className="font-mono text-xs text-emerald-600 mr-2">{name}</span>
+          {summary}
         </div>
       );
+    }
     case "tool_error":
       return (
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">

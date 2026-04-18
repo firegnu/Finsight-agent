@@ -1,15 +1,19 @@
 import { useMemo, useState } from "react";
+import { CaseDetailModal } from "./components/CaseDetailModal";
 import { ChatInput } from "./components/ChatInput";
 import { Header } from "./components/Header";
 import { KPICards } from "./components/KPICards";
 import { ReasoningPanel } from "./components/ReasoningPanel";
 import { ReportPanel } from "./components/ReportPanel";
+import { useCases } from "./hooks/useCases";
 import { useSSE } from "./hooks/useSSE";
 import type { AnalysisReport } from "./types";
 
 export default function App() {
   const { events, status, error, analyze } = useSSE();
+  const cases = useCases();
   const [input, setInput] = useState("");
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
 
   const report = useMemo<AnalysisReport | null>(() => {
     for (let i = events.length - 1; i >= 0; i--) {
@@ -28,16 +32,26 @@ export default function App() {
 
   return (
     <div className="h-full flex flex-col bg-slate-50">
-      <Header />
+      <Header caseCount={cases.cases.length} />
       <div className="flex-none p-4 border-b border-slate-200 bg-white">
         <KPICards />
       </div>
       <div className="flex-1 flex min-h-0">
         <div className="w-2/5 border-r border-slate-200 bg-white overflow-hidden">
-          <ReasoningPanel events={events} status={status} error={error} />
+          <ReasoningPanel
+            events={events}
+            status={status}
+            error={error}
+            onOpenCase={setSelectedCaseId}
+          />
         </div>
         <div className="flex-1 overflow-hidden bg-white">
-          <ReportPanel report={report} status={status} />
+          <ReportPanel
+            report={report}
+            status={status}
+            casesById={cases.byId}
+            onOpenCase={setSelectedCaseId}
+          />
         </div>
       </div>
       <div className="flex-none p-4 border-t border-slate-200 bg-white">
@@ -48,6 +62,10 @@ export default function App() {
           disabled={status === "running"}
         />
       </div>
+      <CaseDetailModal
+        caseId={selectedCaseId}
+        onClose={() => setSelectedCaseId(null)}
+      />
     </div>
   );
 }
