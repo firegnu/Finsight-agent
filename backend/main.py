@@ -1,13 +1,11 @@
 import logging
-
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-
-from fastapi import HTTPException
-
+from pathlib import Path
 from typing import Literal
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, StreamingResponse
+from pydantic import BaseModel
 
 from .agent.orchestrator import run_agent
 from .config import settings
@@ -218,4 +216,38 @@ async def analyze(req: AnalyzeRequest) -> StreamingResponse:
             "X-Accel-Buffering": "no",
             "Connection": "keep-alive",
         },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Frontend static hosting (production single-process mode)
+#
+# When `frontend/dist` exists (after `make build`), this mount serves the SPA
+# at the same origin as the API — no CORS, one port, one process. In dev the
+# directory is absent and this block no-ops, so `make dev-backend` +
+# `make dev-frontend` still works as before (Vite @ :5173 proxying to :8000).
+# ---------------------------------------------------------------------------
+
+_DIST_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+if _DIST_DIR.is_dir() and (_DIST_DIR / "index.html").is_file():
+    logger.info("serving frontend build from %s", _DIST_DIR)
+
+    # Catch-all for any non-API path: serve the real file if it exists
+    # (/, /favicon.svg, /assets/*.js, etc.), else fall back to index.html
+    # so SPA deep links / refreshes don't 404. Registered AFTER all /api/*
+    # routes above so FastAPI matches those first.
+    @app.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
+    async def spa_fallback(full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not found")
+        asset = _DIST_DIR / full_path
+        if asset.is_file():
+            return FileResponse(asset)
+        return FileResponse(_DIST_DIR / "index.html")
+else:
+    logger.info(
+        "frontend/dist not found at %s — dev mode (API only). "
+        "Run `make build` for single-process production mode.",
+        _DIST_DIR,
     )
