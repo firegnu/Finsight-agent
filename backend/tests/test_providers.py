@@ -83,7 +83,7 @@ def test_api_providers_returns_registered(client):
     body = resp.json()
     assert body["default_provider_id"] == settings.default_provider_id
     ids = [p["id"] for p in body["providers"]]
-    assert set(ids) == {"lmstudio", "zhipu"}
+    assert set(ids) == {"lmstudio", "zhipu", "deepseek"}
     # Exactly one provider is flagged default
     assert sum(1 for p in body["providers"] if p["default"]) == 1
 
