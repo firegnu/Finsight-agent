@@ -110,6 +110,28 @@ LLM_MODEL=gpt-4o-mini
 
 `llm/client.py` 里有响应归一化层，自动把 `reasoning_content`（DeepSeek R1 / OpenAI o1 / Qwen thinking 这类 reasoning 模型的思考字段）合并到 `content`，所以换模型不用改业务代码。
 
+### 为什么一个 `base_url` 就能覆盖大部分 provider？
+
+市面上 LLM API 其实只有三大标准：**OpenAI API**、**Anthropic Messages API**、**Google Gemini API**，三者结构互不兼容。但 OpenAI 格式是事实上的通用标准——绝大多数 provider 都原生支持它：
+
+- **国内全员**：DeepSeek、Qwen/DashScope、智谱 GLM、Moonshot Kimi、MiniMax、百川、零一万物
+- **国外非三巨头**：Groq、Mistral、Together AI、Fireworks、Perplexity、xAI Grok
+- **自托管**：Ollama、LM Studio、vLLM、llama.cpp server
+- **聚合器**：OpenRouter（一个 key 转发到 100+ 模型）
+- **三巨头的兼容层**：OpenAI 原生；Anthropic 和 Gemini 也各自提供了 OpenAI 兼容端点（功能阉割版，不支持 prompt caching / thinking / grounding 这些独门能力）
+
+所以这个架构 **≈95% 的 provider 直接换 `.env` 就能用**。唯一需要写独立 adapter 的场景是想用 Anthropic / Gemini 的原生高级能力（prompt caching、extended thinking、grounding），或 Cohere / Bedrock 这类非主流接口——目前项目没这个需求。
+
+### 多 provider 的一个硬约束：chat 可以切，embedding 必须锁死
+
+chat LLM 是无状态调用，切换 provider 零代价。但 **embedding 不一样**——向量空间和具体的 embedding 模型强绑定：
+
+- 不同 embedding 模型输出的向量坐标系完全不同，即使维度相同也不兼容
+- 查询向量和库里已存向量必须来自**同一个模型**，否则检索结果退化成随机
+- 换 embedding provider = 必须重建整个 Chroma 向量库（`python scripts/index_cases.py`）
+
+所以 `.env` 里 `LLM_*`（chat）和 `LLM_EMBEDDING_*`（embedding）**刻意分开配置**：chat 留给用户自由切换，embedding 是部署时决策，建库后不再变动。即便未来加"前端 UI 切换 provider"功能，也只切 chat，embedding 对用户透明。
+
 ## 架构要点（常见追问 FAQ）
 
 | 追问 | 回答 |
