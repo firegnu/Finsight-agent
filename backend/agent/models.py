@@ -62,4 +62,5 @@ class TraceLog(BaseModel):
     final_report: AnalysisReport | None = None
     total_latency_ms: int = 0
     llm_model: str
+    provider_id: str = "unknown"
     status: Literal["success", "error", "running"] = "running"

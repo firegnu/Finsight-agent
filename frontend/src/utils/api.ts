@@ -5,6 +5,7 @@ import type {
   CasesResponse,
   HealthResponse,
   KPIResponse,
+  ProvidersResponse,
   SkillDetail,
   SkillsResponse,
   TraceDetail,
@@ -20,6 +21,12 @@ export async function fetchKPI(): Promise<KPIResponse> {
 export async function fetchHealth(): Promise<HealthResponse> {
   const resp = await fetch("/api/health");
   if (!resp.ok) throw new Error(`Health fetch failed: ${resp.status}`);
+  return resp.json();
+}
+
+export async function fetchProviders(): Promise<ProvidersResponse> {
+  const resp = await fetch("/api/providers");
+  if (!resp.ok) throw new Error(`Providers fetch failed: ${resp.status}`);
   return resp.json();
 }
 

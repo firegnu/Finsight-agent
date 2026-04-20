@@ -73,6 +73,19 @@ export interface HealthResponse {
   status: string;
   model: string;
   provider: string;
+  default_provider_id?: string;
+}
+
+export interface ProviderInfo {
+  id: string;
+  label: string;
+  model: string;
+  default: boolean;
+}
+
+export interface ProvidersResponse {
+  default_provider_id: string;
+  providers: ProviderInfo[];
 }
 
 export type AgentStatus = "idle" | "running" | "done" | "error";
@@ -135,6 +148,7 @@ export interface TraceSummary {
   trace_id: string;
   user_query: string;
   llm_model: string | null;
+  provider_id?: string | null;
   status: string | null;
   total_latency_ms: number;
   step_count: number;

@@ -6,7 +6,7 @@ import re
 
 from ..agent.prompts import SQL_GEN_PROMPT
 from ..db.database import query_all
-from ..llm.client import MODEL, chat
+from ..llm.client import chat
 
 logger = logging.getLogger("finsight.sql_query")
 
@@ -34,13 +34,17 @@ def validate_sql_readonly(sql: str) -> None:
         raise SQLValidationError(f"Forbidden keyword detected in: {stripped[:80]}")
 
 
-async def generate_sql(query_description: str, prior_error: str | None = None) -> str:
+async def generate_sql(
+    query_description: str,
+    prior_error: str | None = None,
+    provider_id: str | None = None,
+) -> str:
     user_msg = f"用户需求：{query_description}"
     if prior_error:
         user_msg += f"\n\n上次生成的 SQL 执行出错了：{prior_error}\n请修正后重新生成。"
 
     response = await chat(
-        model=MODEL,
+        provider_id=provider_id,
         messages=[
             {"role": "system", "content": SQL_GEN_PROMPT},
             {"role": "user", "content": user_msg},
@@ -55,13 +59,15 @@ async def generate_sql(query_description: str, prior_error: str | None = None) -
     return sql.strip().rstrip(";")
 
 
-async def run(query_description: str) -> dict:
+async def run(query_description: str, provider_id: str | None = None) -> dict:
     """Tool entry point: natural-language description → SQL → rows."""
     last_err: str | None = None
     last_sql: str | None = None
     for attempt in range(MAX_RETRIES + 1):
         try:
-            last_sql = await generate_sql(query_description, prior_error=last_err)
+            last_sql = await generate_sql(
+                query_description, prior_error=last_err, provider_id=provider_id
+            )
             validate_sql_readonly(last_sql)
             rows = query_all(last_sql)
             truncated = len(rows) > MAX_ROWS_RETURNED

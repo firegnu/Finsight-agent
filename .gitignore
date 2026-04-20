@@ -36,3 +36,8 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Test artifacts
+.playwright-mcp/
+*-analyze-complete.png
+provider-switcher-*.png

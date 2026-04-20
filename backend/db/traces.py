@@ -12,6 +12,14 @@ def _utc_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _ensure_provider_column(conn) -> None:
+    """Add provider_id column on demand for DBs seeded before the schema change.
+    Idempotent."""
+    cols = [row[1] for row in conn.execute("PRAGMA table_info(traces)").fetchall()]
+    if "provider_id" not in cols:
+        conn.execute("ALTER TABLE traces ADD COLUMN provider_id TEXT DEFAULT 'unknown'")
+
+
 def save_trace(trace: TraceLog, started_at: str | None = None) -> None:
     """Persist a TraceLog + all its steps in a single transaction."""
     completed_at = _utc_iso() if trace.status != "running" else None
@@ -22,14 +30,16 @@ def save_trace(trace: TraceLog, started_at: str | None = None) -> None:
     )
 
     with get_connection() as conn:
+        _ensure_provider_column(conn)
         conn.execute(
             "INSERT INTO traces "
-            "(trace_id, user_query, llm_model, status, total_latency_ms, "
+            "(trace_id, user_query, llm_model, provider_id, status, total_latency_ms, "
             " step_count, started_at, completed_at, final_report_json) "
-            "VALUES (?,?,?,?,?,?,?,?,?) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(trace_id) DO UPDATE SET "
             "  user_query = excluded.user_query, "
             "  llm_model = excluded.llm_model, "
+            "  provider_id = excluded.provider_id, "
             "  status = excluded.status, "
             "  total_latency_ms = excluded.total_latency_ms, "
             "  step_count = excluded.step_count, "
@@ -39,6 +49,7 @@ def save_trace(trace: TraceLog, started_at: str | None = None) -> None:
                 trace.trace_id,
                 trace.user_query,
                 trace.llm_model,
+                trace.provider_id,
                 trace.status,
                 trace.total_latency_ms,
                 len(trace.steps),
@@ -73,8 +84,11 @@ def save_trace(trace: TraceLog, started_at: str | None = None) -> None:
 
 
 def list_traces(limit: int = 50) -> list[dict]:
+    with get_connection() as conn:
+        _ensure_provider_column(conn)
+        conn.commit()
     rows = query_all(
-        "SELECT trace_id, user_query, llm_model, status, total_latency_ms, "
+        "SELECT trace_id, user_query, llm_model, provider_id, status, total_latency_ms, "
         "       step_count, started_at, completed_at "
         "FROM traces ORDER BY started_at DESC LIMIT ?",
         (limit,),
@@ -83,8 +97,11 @@ def list_traces(limit: int = 50) -> list[dict]:
 
 
 def get_trace_detail(trace_id: str) -> dict | None:
+    with get_connection() as conn:
+        _ensure_provider_column(conn)
+        conn.commit()
     trace = query_one(
-        "SELECT trace_id, user_query, llm_model, status, total_latency_ms, "
+        "SELECT trace_id, user_query, llm_model, provider_id, status, total_latency_ms, "
         "       step_count, started_at, completed_at, final_report_json "
         "FROM traces WHERE trace_id = ?",
         (trace_id,),

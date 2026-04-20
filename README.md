@@ -84,29 +84,41 @@ make test
 
 ## 切换 LLM Provider
 
-改 `.env` 三个变量即可：
+本项目支持**多 provider 并存 + 前端运行时切换**。`.env` 里同时配置多个 provider，启动后前端 Header 右上角的下拉菜单可实时切换，选择持久化到 `localStorage`，每次 `/api/analyze` 请求会带上 `provider_id`。Embedding 单独配置且锁死（见下文）。
+
+### 预置两个 provider
+
+`.env` 默认包含 `lmstudio`（本地 LM Studio）+ `zhipu`（智谱云 GLM-4.7-Flash 免费）两个：
 
 ```bash
-# 本地 LM Studio + GLM
-LLM_BASE_URL=http://127.0.0.1:1234/v1
-LLM_API_KEY=lm-studio
-LLM_MODEL=zai-org/glm-4.7-flash
+DEFAULT_PROVIDER_ID=zhipu
 
-# DeepSeek API（云端）
-LLM_BASE_URL=https://api.deepseek.com/v1
-LLM_API_KEY=sk-xxxxxxxxxx
-LLM_MODEL=deepseek-chat
+LMSTUDIO_LABEL=本地 LM Studio (GLM-4.7-Flash)
+LMSTUDIO_BASE_URL=http://127.0.0.1:1234/v1
+LMSTUDIO_API_KEY=lm-studio
+LMSTUDIO_MODEL=zai-org/glm-4.7-flash
 
-# 通义千问
-LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-LLM_API_KEY=sk-xxxxxxxxxx
-LLM_MODEL=qwen-plus
-
-# OpenAI
-LLM_BASE_URL=https://api.openai.com/v1
-LLM_API_KEY=sk-xxxxxxxxxx
-LLM_MODEL=gpt-4o-mini
+ZHIPU_LABEL=智谱云 GLM-4.7-Flash
+ZHIPU_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+ZHIPU_API_KEY=<在 bigmodel.cn 控制台申请，免费>
+ZHIPU_MODEL=glm-4.7-flash
 ```
+
+### 新增一个 provider（如 DeepSeek / 通义千问 / OpenAI）
+
+1. `.env` 里加 4 行：`DEEPSEEK_LABEL` / `DEEPSEEK_BASE_URL` / `DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL`
+2. `backend/config.py` 的 `PROVIDER_IDS` 元组里追加 `"deepseek"`
+3. 重启后端。前端下拉会自动出现新选项
+
+常见 provider 参考：
+
+| Provider | base_url | 模型示例 |
+|---|---|---|
+| 智谱 GLM | `https://open.bigmodel.cn/api/paas/v4` | `glm-4.7-flash`（免费）|
+| DashScope | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus` |
+| DeepSeek | `https://api.deepseek.com/v1` | `deepseek-chat` |
+| OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` |
+| OpenRouter | `https://openrouter.ai/api/v1` | `anthropic/claude-haiku-4.5` |
 
 `llm/client.py` 里有响应归一化层，自动把 `reasoning_content`（DeepSeek R1 / OpenAI o1 / Qwen thinking 这类 reasoning 模型的思考字段）合并到 `content`，所以换模型不用改业务代码。
 
@@ -130,7 +142,7 @@ chat LLM 是无状态调用，切换 provider 零代价。但 **embedding 不一
 - 查询向量和库里已存向量必须来自**同一个模型**，否则检索结果退化成随机
 - 换 embedding provider = 必须重建整个 Chroma 向量库（`python scripts/index_cases.py`）
 
-所以 `.env` 里 `LLM_*`（chat）和 `LLM_EMBEDDING_*`（embedding）**刻意分开配置**：chat 留给用户自由切换，embedding 是部署时决策，建库后不再变动。即便未来加"前端 UI 切换 provider"功能，也只切 chat，embedding 对用户透明。
+所以 `.env` 里**chat** 用 `{PROVIDER_ID}_*` 格式（可多组）允许前端 UI 切换，**embedding** 固定用一组 `LLM_EMBEDDING_*` 变量，对用户透明，不出现在 UI 切换器里。建库之后想换 embedding 模型，必须跑 `python scripts/index_cases.py` 重建 Chroma。
 
 ## 架构要点（常见追问 FAQ）
 
@@ -140,7 +152,7 @@ chat LLM 是无状态调用，切换 provider 零代价。但 **embedding 不一
 | 为什么不用 LangChain？ | Outer/Inner Harness 自研，控制力和可审计性强，金融场景需要每步 trace；LangChain 抽象过深，调试成本高 |
 | 异常检测方法？ | 统计：历史均值 ± 标准差，deviation 倍数映射到 4 级 severity。不过度工程化，不引入 ML 模型 |
 | 怎么防止 LLM 编造数据？ | Prompt 硬约束"数字必须来自工具返回" + Pydantic 输出 schema 校验 + SQL 只读白名单 |
-| Provider 切换？ | `.env` 三参数化（base_url / api_key / model），归一化层处理 `reasoning_content`。本地用 LM Studio，云端用 DeepSeek。零代码改动 |
+| Provider 切换？ | 多 provider 预置在 `.env`，前端 Header 下拉实时切换，选择持久化到 `localStorage`。每次 `/api/analyze` 带 `provider_id`，trace 记录每次用的是哪个。Embedding 单独锁死 |
 | SSE vs WebSocket？ | 单向推送够用，SSE 简单、天然兼容 HTTP/2、在 Nginx 反向代理里配置只要 `proxy_buffering off` |
 | 生产扩展？ | SQLite → PostgreSQL，增加 Chroma 做 RAG 案例检索，Redis 做 Trace 日志缓存，Docker Compose 一键部署 |
 

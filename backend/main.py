@@ -32,7 +32,35 @@ app.add_middleware(
 
 @app.get("/api/health")
 async def health() -> dict:
-    return {"status": "ok", "model": settings.llm_model, "provider": settings.llm_provider}
+    try:
+        default = settings.get_provider(None)
+        return {
+            "status": "ok",
+            "model": default.model,
+            "provider": default.id,
+            "default_provider_id": default.id,
+        }
+    except KeyError as e:
+        return {"status": "degraded", "error": str(e)}
+
+
+@app.get("/api/providers")
+async def list_providers() -> dict:
+    """Return configured chat providers (the embedding provider is
+    deliberately not switchable, so it's excluded here)."""
+    default_id = settings.default_provider_id
+    return {
+        "default_provider_id": default_id,
+        "providers": [
+            {
+                "id": p.id,
+                "label": p.label,
+                "model": p.model,
+                "default": p.id == default_id,
+            }
+            for p in settings.providers
+        ],
+    }
 
 
 @app.get("/api/kpi")
@@ -167,12 +195,19 @@ async def trace_delete(trace_id: str) -> dict:
 
 class AnalyzeRequest(BaseModel):
     query: str
+    provider_id: str | None = None
 
 
 @app.post("/api/analyze")
 async def analyze(req: AnalyzeRequest) -> StreamingResponse:
+    if req.provider_id is not None:
+        try:
+            settings.get_provider(req.provider_id)
+        except KeyError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
     async def stream():
-        async for event in run_agent(req.query):
+        async for event in run_agent(req.query, provider_id=req.provider_id):
             yield event.serialize()
 
     return StreamingResponse(

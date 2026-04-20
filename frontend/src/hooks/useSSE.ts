@@ -16,70 +16,75 @@ export function useSSE() {
     setStatus("idle");
   }, []);
 
-  const analyze = useCallback(async (query: string) => {
-    setEvents([]);
-    setError(null);
-    setStatus("running");
+  const analyze = useCallback(
+    async (query: string, providerId?: string | null) => {
+      setEvents([]);
+      setError(null);
+      setStatus("running");
 
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
+      const ctrl = new AbortController();
+      abortRef.current = ctrl;
 
-    try {
-      const resp = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-        signal: ctrl.signal,
-      });
-      if (!resp.ok || !resp.body) {
-        throw new Error(`analyze failed: HTTP ${resp.status}`);
-      }
+      try {
+        const body: Record<string, unknown> = { query };
+        if (providerId) body.provider_id = providerId;
+        const resp = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: ctrl.signal,
+        });
+        if (!resp.ok || !resp.body) {
+          throw new Error(`analyze failed: HTTP ${resp.status}`);
+        }
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let buffer = "";
-      let sawError = false;
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+        let sawError = false;
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
 
-        let idx: number;
-        while ((idx = buffer.indexOf("\n\n")) !== -1) {
-          const raw = buffer.slice(0, idx).trim();
-          buffer = buffer.slice(idx + 2);
-          if (!raw.startsWith("data:")) continue;
-          const json = raw.replace(/^data:\s*/, "");
-          try {
-            const event = JSON.parse(json) as SSEEvent;
-            setEvents((prev) => [...prev, event]);
-            if (event.type === "error") {
-              sawError = true;
-              const msg =
-                typeof event.data?.msg === "string"
-                  ? event.data.msg
-                  : "Unknown error";
-              setError(msg);
-              setStatus("error");
+          let idx: number;
+          while ((idx = buffer.indexOf("\n\n")) !== -1) {
+            const raw = buffer.slice(0, idx).trim();
+            buffer = buffer.slice(idx + 2);
+            if (!raw.startsWith("data:")) continue;
+            const json = raw.replace(/^data:\s*/, "");
+            try {
+              const event = JSON.parse(json) as SSEEvent;
+              setEvents((prev) => [...prev, event]);
+              if (event.type === "error") {
+                sawError = true;
+                const msg =
+                  typeof event.data?.msg === "string"
+                    ? event.data.msg
+                    : "Unknown error";
+                setError(msg);
+                setStatus("error");
+              }
+              if (event.type === "done" && !sawError) {
+                setStatus("done");
+              }
+            } catch (e) {
+              console.warn("Bad SSE payload:", json, e);
             }
-            if (event.type === "done" && !sawError) {
-              setStatus("done");
-            }
-          } catch (e) {
-            console.warn("Bad SSE payload:", json, e);
           }
         }
+      } catch (e) {
+        if ((e as { name?: string }).name === "AbortError") {
+          setStatus("idle");
+        } else {
+          setStatus("error");
+          setError((e as Error).message);
+        }
       }
-    } catch (e) {
-      if ((e as { name?: string }).name === "AbortError") {
-        setStatus("idle");
-      } else {
-        setStatus("error");
-        setError((e as Error).message);
-      }
-    }
-  }, []);
+    },
+    [],
+  );
 
   const abort = useCallback(() => {
     abortRef.current?.abort();

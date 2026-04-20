@@ -1,20 +1,43 @@
+from __future__ import annotations
+
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+# Providers that the app supports. To add a new one (e.g. DeepSeek), append
+# its id here + declare DEEPSEEK_LABEL / _BASE_URL / _API_KEY / _MODEL in .env.
+PROVIDER_IDS: tuple[str, ...] = ("lmstudio", "zhipu")
+
+
+class ProviderConfig(BaseModel):
+    id: str
+    label: str
+    base_url: str
+    api_key: str
+    model: str
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    # Chat LLM
-    llm_provider: str = "lmstudio"
-    llm_base_url: str = "http://localhost:1234/v1"
-    llm_api_key: str = "lm-studio"
-    llm_model: str = "qwen3.5-35b-a3b"
+    default_provider_id: str = "zhipu"
     max_agent_steps: int = 10
 
-    # Embedding (defaults empty → fall back to chat llm_* vars; allows independent
-    # providers, e.g. DeepSeek for chat + dashscope for embedding on VPS)
-    llm_embedding_base_url: str = ""
-    llm_embedding_api_key: str = ""
+    # Provider 1: LM Studio (local)
+    lmstudio_label: str = "本地 LM Studio"
+    lmstudio_base_url: str = "http://127.0.0.1:1234/v1"
+    lmstudio_api_key: str = "lm-studio"
+    lmstudio_model: str = "zai-org/glm-4.7-flash"
+
+    # Provider 2: Zhipu BigModel (cloud)
+    zhipu_label: str = "智谱云 GLM-4.7-Flash"
+    zhipu_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
+    zhipu_api_key: str = ""
+    zhipu_model: str = "glm-4.7-flash"
+
+    # Embedding — locked to one provider (see README)
+    llm_embedding_base_url: str = "http://127.0.0.1:1234/v1"
+    llm_embedding_api_key: str = "lm-studio"
     llm_embedding_model: str = "text-embedding-nomic-embed-text-v1.5"
 
     # RAG / Chroma
@@ -32,12 +55,32 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     @property
-    def embedding_base_url(self) -> str:
-        return self.llm_embedding_base_url or self.llm_base_url
+    def providers(self) -> list[ProviderConfig]:
+        result: list[ProviderConfig] = []
+        for pid in PROVIDER_IDS:
+            base_url = getattr(self, f"{pid}_base_url", "")
+            api_key = getattr(self, f"{pid}_api_key", "")
+            # Skip providers without credentials (e.g. zhipu key left blank
+            # on a machine that only runs local LM Studio).
+            if not base_url or not api_key:
+                continue
+            result.append(ProviderConfig(
+                id=pid,
+                label=getattr(self, f"{pid}_label", pid),
+                base_url=base_url,
+                api_key=api_key,
+                model=getattr(self, f"{pid}_model", ""),
+            ))
+        return result
 
-    @property
-    def embedding_api_key(self) -> str:
-        return self.llm_embedding_api_key or self.llm_api_key
+    def get_provider(self, provider_id: str | None) -> ProviderConfig:
+        """Resolve a provider_id (or default) to its config. Raises KeyError
+        when the id is unknown or lacks credentials."""
+        resolved = provider_id or self.default_provider_id
+        for p in self.providers:
+            if p.id == resolved:
+                return p
+        raise KeyError(f"Unknown or unconfigured provider_id: {resolved}")
 
 
 settings = Settings()

@@ -1,22 +1,25 @@
-import { useEffect, useState } from "react";
-import type { HealthResponse } from "../types";
-import { fetchHealth } from "../utils/api";
+import type { ProviderInfo } from "../types";
+import { ProviderSwitcher } from "./ProviderSwitcher";
 
 interface Props {
   caseCount?: number;
   skillCount?: number;
   onOpenHistory?: () => void;
+  providers: ProviderInfo[];
+  selectedProviderId: string | null;
+  onProviderChange: (id: string) => void;
+  providerSwitcherDisabled?: boolean;
 }
 
-export function Header({ caseCount = 0, skillCount = 0, onOpenHistory }: Props) {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-
-  useEffect(() => {
-    fetchHealth().then(setHealth).catch(() => setHealth(null));
-  }, []);
-
-  const modelLabel = health ? `${health.model} · ${health.provider}` : "loading…";
-
+export function Header({
+  caseCount = 0,
+  skillCount = 0,
+  onOpenHistory,
+  providers,
+  selectedProviderId,
+  onProviderChange,
+  providerSwitcherDisabled,
+}: Props) {
   return (
     <header className="flex items-center justify-between px-6 h-14 border-b border-slate-200 bg-white">
       <div className="flex items-center gap-3">
@@ -60,12 +63,12 @@ export function Header({ caseCount = 0, skillCount = 0, onOpenHistory }: Props) 
             <span className="font-mono text-[10px]">768d · cosine</span>
           </div>
         )}
-        <div className="flex items-center gap-2 font-mono">
-          <span
-            className={`w-2 h-2 rounded-full ${health ? "bg-green-500" : "bg-slate-300"}`}
-          />
-          <span>Model: {modelLabel}</span>
-        </div>
+        <ProviderSwitcher
+          providers={providers}
+          selectedId={selectedProviderId}
+          onChange={onProviderChange}
+          disabled={providerSwitcherDisabled}
+        />
       </div>
     </header>
   );

@@ -8,7 +8,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from ..agent.models import AnalysisReport
-from ..llm.client import MODEL, chat
+from ..llm.client import chat
 
 logger = logging.getLogger("finsight.report_gen")
 
@@ -72,7 +72,7 @@ def _strip_code_fence(raw: str) -> str:
     return s.strip()
 
 
-async def run(findings_summary: str) -> dict:
+async def run(findings_summary: str, provider_id: str | None = None) -> dict:
     """Generate structured report from prior findings."""
     last_err: str | None = None
     last_raw: str | None = None
@@ -83,7 +83,7 @@ async def run(findings_summary: str) -> dict:
             user_msg += f"\n\n上次生成的 JSON 有错误：{last_err}\n请修正后重新生成。"
 
         response = await chat(
-            model=MODEL,
+            provider_id=provider_id,
             messages=[
                 {"role": "system", "content": REPORT_SYS_PROMPT},
                 {"role": "user", "content": user_msg},

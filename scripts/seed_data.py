@@ -59,6 +59,7 @@ CREATE TABLE traces (
     trace_id TEXT UNIQUE NOT NULL,
     user_query TEXT NOT NULL,
     llm_model TEXT,
+    provider_id TEXT DEFAULT 'unknown',
     status TEXT,
     total_latency_ms INTEGER DEFAULT 0,
     step_count INTEGER DEFAULT 0,

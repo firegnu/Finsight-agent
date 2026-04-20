@@ -12,7 +12,7 @@ from pydantic import ValidationError
 
 from ..config import settings
 from ..db.traces import save_trace
-from ..llm.client import MODEL, chat
+from ..llm.client import chat, get_client
 from ..sse.events import SSEEvent
 from ..tools.registry import TOOL_DEFINITIONS, execute_tool
 from .models import AnalysisReport, TraceLog, TraceStep
@@ -49,11 +49,15 @@ def _summarize_tool_result(name: str, result: dict) -> str:
     return f"✅ {str(result)[:MAX_TOOL_RESULT_SUMMARY]}"
 
 
-async def run_agent(user_query: str) -> AsyncGenerator[SSEEvent, None]:
+async def run_agent(
+    user_query: str, provider_id: str | None = None
+) -> AsyncGenerator[SSEEvent, None]:
+    bundle = get_client(provider_id)
     trace = TraceLog(
         trace_id=f"trace-{uuid4().hex[:12]}",
         user_query=user_query,
-        llm_model=MODEL,
+        llm_model=bundle.model,
+        provider_id=bundle.provider_id,
     )
     t_start = time.time()
     started_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -63,14 +67,19 @@ async def run_agent(user_query: str) -> AsyncGenerator[SSEEvent, None]:
         {"role": "user", "content": user_query},
     ]
 
-    yield SSEEvent(type="start", data={"trace_id": trace.trace_id, "query": user_query})
+    yield SSEEvent(type="start", data={
+        "trace_id": trace.trace_id,
+        "query": user_query,
+        "provider_id": bundle.provider_id,
+        "model": bundle.model,
+    })
 
     completed = False
     for step in range(settings.max_agent_steps):
         step_t = time.time()
         try:
             response = await chat(
-                model=MODEL,
+                provider_id=bundle.provider_id,
                 messages=messages,
                 tools=TOOL_DEFINITIONS,
                 tool_choice="auto",
@@ -120,7 +129,7 @@ async def run_agent(user_query: str) -> AsyncGenerator[SSEEvent, None]:
                 "name": tool_name, "args": tool_args, "step": step,
             })
             tool_t = time.time()
-            result = await execute_tool(tool_name, tool_args)
+            result = await execute_tool(tool_name, tool_args, provider_id=bundle.provider_id)
 
             if "error" in result and tool_name != "report_gen":
                 yield SSEEvent(type="tool_error", data={
