@@ -1,18 +1,23 @@
 import { useEffect, useRef } from "react";
 import type { AgentStatus, RagHit, SkillMeta, SSEEvent } from "../types";
+import { WaitingIndicator } from "./WaitingIndicator";
 
 interface Props {
   events: SSEEvent[];
   status: AgentStatus;
   error: string | null;
+  lastEventAt: number;
   onOpenCase: (id: string) => void;
   onOpenSkill: (name: string) => void;
 }
+
+const TERMINAL_TYPES = new Set(["final_text", "report", "done", "error"]);
 
 export function ReasoningPanel({
   events,
   status,
   error,
+  lastEventAt,
   onOpenCase,
   onOpenSkill,
 }: Props) {
@@ -22,7 +27,12 @@ export function ReasoningPanel({
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [events.length, status]);
+  }, [events.length, status, lastEventAt]);
+
+  const lastType = events.length ? events[events.length - 1].type : null;
+  const showWaiting =
+    status === "running" && (lastType === null || !TERMINAL_TYPES.has(lastType));
+  const waitingStage = lastType === "tool_call" ? "tool" : "thinking";
 
   return (
     <div className="h-full flex flex-col">
@@ -44,6 +54,9 @@ export function ReasoningPanel({
             onOpenSkill={onOpenSkill}
           />
         ))}
+        {showWaiting && (
+          <WaitingIndicator key={lastEventAt} stage={waitingStage} />
+        )}
         {error && (
           <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
             ⚠️ {error}

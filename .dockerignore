@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node — build runs inside the frontend-builder stage, host node_modules
+# and dist must not leak into the image context
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+*.log
+
+# Data — seeded at container first-run, must not bake into image
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment — injected via env_file at runtime, never baked in
+.env
+.env.local
+.env.*.local
+
+# Git / OS / IDE
+.git/
+.gitignore
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test / docs artifacts not needed in image
+.playwright-mcp/
+*.png
+HANDOFF.md
+FinSight Agent.md
+
+# Docker files themselves
+Dockerfile
+docker-compose.yml
+.dockerignore

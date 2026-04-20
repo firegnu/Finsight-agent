@@ -8,6 +8,10 @@ export function useSSE() {
   const [events, setEvents] = useState<SSEEvent[]>([]);
   const [status, setStatus] = useState<AgentStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  // Monotonic timestamp of the last SSE event (or stream start). Drives the
+  // WaitingIndicator's elapsed counter — its `key={lastEventAt}` forces a
+  // remount each time a new event arrives so the counter resets to 0.
+  const [lastEventAt, setLastEventAt] = useState<number>(0);
   const abortRef = useRef<AbortController | null>(null);
 
   const reset = useCallback(() => {
@@ -21,6 +25,7 @@ export function useSSE() {
       setEvents([]);
       setError(null);
       setStatus("running");
+      setLastEventAt(Date.now());
 
       const ctrl = new AbortController();
       abortRef.current = ctrl;
@@ -57,6 +62,7 @@ export function useSSE() {
             try {
               const event = JSON.parse(json) as SSEEvent;
               setEvents((prev) => [...prev, event]);
+              setLastEventAt(Date.now());
               if (event.type === "error") {
                 sawError = true;
                 const msg =
@@ -91,5 +97,5 @@ export function useSSE() {
     abortRef.current = null;
   }, []);
 
-  return { events, status, error, analyze, abort, reset };
+  return { events, status, error, analyze, abort, reset, lastEventAt };
 }

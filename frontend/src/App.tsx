@@ -16,7 +16,7 @@ import type { AnalysisReport } from "./types";
 const PROVIDER_STORAGE_KEY = "finsight.provider_id";
 
 export default function App() {
-  const { events, status, error, analyze } = useSSE();
+  const { events, status, error, analyze, lastEventAt } = useSSE();
   const cases = useCases();
   const skills = useSkills();
   const providersState = useProviders();
@@ -86,6 +86,7 @@ export default function App() {
             events={events}
             status={status}
             error={error}
+            lastEventAt={lastEventAt}
             onOpenCase={setSelectedCaseId}
             onOpenSkill={setSelectedSkillName}
           />
