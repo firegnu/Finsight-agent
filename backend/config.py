@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     default_provider_id: str = "zhipu"
-    max_agent_steps: int = 10
+    max_agent_steps: int = 20
 
     # Provider 1: LM Studio (local)
     lmstudio_label: str = "本地 LM Studio"
