@@ -60,7 +60,7 @@ export function Header({
             <span>📚</span>
             <span className="font-medium">{caseCount} 个历史案例</span>
             <span className="text-indigo-400">·</span>
-            <span className="font-mono text-[10px]">768d · cosine</span>
+            <span className="font-mono text-[10px]">1024d · cosine</span>
           </div>
         )}
         <ProviderSwitcher
