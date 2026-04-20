@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Providers that the app supports. To add a new one (e.g. DeepSeek), append
 # its id here + declare DEEPSEEK_LABEL / _BASE_URL / _API_KEY / _MODEL in .env.
-PROVIDER_IDS: tuple[str, ...] = ("lmstudio", "zhipu")
+PROVIDER_IDS: tuple[str, ...] = ("lmstudio", "zhipu", "deepseek")
 
 
 class ProviderConfig(BaseModel):
@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     zhipu_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
     zhipu_api_key: str = ""
     zhipu_model: str = "glm-4.7-flash"
+
+    # Provider 3: DeepSeek (cloud, paid but cheap; fast TTFT, strong tool use)
+    deepseek_label: str = "DeepSeek V3"
+    deepseek_base_url: str = "https://api.deepseek.com/v1"
+    deepseek_api_key: str = ""
+    deepseek_model: str = "deepseek-chat"
 
     # Embedding — locked to one provider (see README)
     llm_embedding_base_url: str = "http://127.0.0.1:1234/v1"

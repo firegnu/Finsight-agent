@@ -6,7 +6,7 @@
 
 - **后端**: Python 3.11 + FastAPI + OpenAI SDK + Pydantic v2 + SQLite + ChromaDB + NumPy
 - **前端**: React 19 + TypeScript + Vite 8 + Tailwind CSS v3
-- **LLM（provider-agnostic）**: 智谱云 GLM-4.7-Flash（默认、免费）/ 本地 LM Studio 可选，前端下拉实时切换；所有 OpenAI 兼容 provider 改 `.env` 即可加入
+- **LLM（provider-agnostic）**: 智谱云 GLM-4.7-Flash（默认、免费）/ DeepSeek V3（付费、快）/ 本地 LM Studio，前端下拉实时切换；所有 OpenAI 兼容 provider 改 `.env` 即可加入
 - **Embedding**: SiliconFlow `BAAI/bge-m3`（默认、免费、1024 维），单 provider 锁死
 - **架构**: ReAct 循环 + SSE 流式推送 + 6 个工具（sql_query / anomaly_detect / financial_api / rag_search / use_skill / report_gen）+ HITL 审批 + trace 持久化
 
@@ -86,9 +86,9 @@ make test
 
 本项目支持**多 provider 并存 + 前端运行时切换**。`.env` 里同时配置多个 provider，启动后前端 Header 右上角的下拉菜单可实时切换，选择持久化到 `localStorage`，每次 `/api/analyze` 请求会带上 `provider_id`。Embedding 单独配置且锁死（见下文）。
 
-### 预置两个 provider
+### 预置三个 provider
 
-`.env` 默认包含 `lmstudio`（本地 LM Studio）+ `zhipu`（智谱云 GLM-4.7-Flash 免费）两个：
+`.env` 默认包含 `lmstudio`（本地 LM Studio）+ `zhipu`（智谱云 GLM-4.7-Flash 免费，但并发=1 比较慢）+ `deepseek`（DeepSeek V3 付费但极便宜，速度快、工具调用强）：
 
 ```bash
 DEFAULT_PROVIDER_ID=zhipu
@@ -102,12 +102,17 @@ ZHIPU_LABEL=智谱云 GLM-4.7-Flash
 ZHIPU_BASE_URL=https://open.bigmodel.cn/api/paas/v4
 ZHIPU_API_KEY=<在 bigmodel.cn 控制台申请，免费>
 ZHIPU_MODEL=glm-4.7-flash
+
+DEEPSEEK_LABEL=DeepSeek V3
+DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
+DEEPSEEK_API_KEY=<在 platform.deepseek.com 申请，新用户送 ~10 元>
+DEEPSEEK_MODEL=deepseek-chat
 ```
 
-### 新增一个 provider（如 DeepSeek / 通义千问 / OpenAI）
+### 新增一个 provider（如通义千问 / Moonshot / OpenAI）
 
-1. `.env` 里加 4 行：`DEEPSEEK_LABEL` / `DEEPSEEK_BASE_URL` / `DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL`
-2. `backend/config.py` 的 `PROVIDER_IDS` 元组里追加 `"deepseek"`
+1. `.env` 里加 4 行：`XXX_LABEL` / `XXX_BASE_URL` / `XXX_API_KEY` / `XXX_MODEL`
+2. `backend/config.py` 的 `PROVIDER_IDS` 元组里追加 `"xxx"`
 3. 重启后端。前端下拉会自动出现新选项
 
 常见 provider 参考：
@@ -176,7 +181,7 @@ chat LLM 是无状态调用，切换 provider 零代价。但 **embedding 不一
   - HITL 真实审批（`POST /api/approve` + SQLite 持久化）
   - Trace 日志持久化 + 历史分析 modal（含"再问一次"回放）
   - Skills 系统（5 个 SKILL.md 方法论 + `use_skill` 工具 + 动态 catalog 注入 system prompt）
-  - **多 Provider 切换器**：双 provider 预置（本地 LM Studio + 智谱云），前端 Header 下拉运行时切换，选择 localStorage 持久化，每个 trace 记录 `provider_id`
+  - **多 Provider 切换器**：三 provider 预置（本地 LM Studio + 智谱云 + DeepSeek），前端 Header 下拉运行时切换，选择 localStorage 持久化，每个 trace 记录 `provider_id`
   - **SiliconFlow bge-m3 embedding**：云端免费 1024 维，Chroma 索引与 embedding 模型强绑定（换模型需 `python scripts/index_cases.py` 重建）
 - **Day 8 ✅**: FastAPI 托管前端静态文件（单进程部署）—— `make serve-prod` 同端口服务 API + SPA
 - **Day 9（计划中）**: Docker + VPS 部署
