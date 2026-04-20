@@ -4,10 +4,11 @@
 
 ## 技术栈
 
-- **后端**: Python 3.11 + FastAPI + OpenAI SDK + Pydantic v2 + SQLite + NumPy
+- **后端**: Python 3.11 + FastAPI + OpenAI SDK + Pydantic v2 + SQLite + ChromaDB + NumPy
 - **前端**: React 19 + TypeScript + Vite 8 + Tailwind CSS v3
-- **LLM（provider-agnostic）**: 本地 LM Studio / DeepSeek / 通义千问 / OpenAI，改 `.env` 切换，零代码改动
-- **架构**: ReAct 循环 + SSE 流式推送 + 3 个工具（sql_query / anomaly_detect / report_gen）
+- **LLM（provider-agnostic）**: 智谱云 GLM-4.7-Flash（默认、免费）/ 本地 LM Studio 可选，前端下拉实时切换；所有 OpenAI 兼容 provider 改 `.env` 即可加入
+- **Embedding**: SiliconFlow `BAAI/bge-m3`（默认、免费、1024 维），单 provider 锁死
+- **架构**: ReAct 循环 + SSE 流式推送 + 6 个工具（sql_query / anomaly_detect / financial_api / rag_search / use_skill / report_gen）+ HITL 审批 + trace 持久化
 
 ## 快速启动
 
@@ -15,54 +16,53 @@
 
 - Python 3.11+（推荐 conda env）
 - Node.js 20+
-- 一个 OpenAI 兼容的 LLM 后端，任选其一：
-  - **LM Studio（本地推荐）**：加载 `zai-org/glm-4.7-flash`（或其他非 thinking chat 模型），启动 server 监听 `localhost:1234`
-  - **DeepSeek API**：准备 API key，`.env` 改成 `https://api.deepseek.com/v1` + `deepseek-chat`
-  - **通义千问 / OpenAI**：同理改 `.env`
+- 至少一个 LLM API key，默认配置需要：
+  - **智谱云**（聊天）：从 [bigmodel.cn](https://open.bigmodel.cn) 免费申请，`glm-4.7-flash` 永久免费（1 并发）
+  - **SiliconFlow**（embedding）：从 [siliconflow.cn](https://siliconflow.cn) 免费申请，`BAAI/bge-m3` 免费
+- **或**用本地 LM Studio（同时加载 chat 模型 + embedding 模型）避开外部 API——改 `.env` 即可
 
 ### 一键启动（Makefile）
 
 ```bash
 make install        # 安装前后端依赖
-make seed           # 生成模拟数据
+cp .env.example .env && $EDITOR .env   # 填入 ZHIPU_API_KEY + LLM_EMBEDDING_API_KEY
+make seed           # 生成 SQLite 业务数据
+python scripts/index_cases.py          # 构建 Chroma 向量索引
 
 # 分别在两个终端跑：
-make dev-backend    # FastAPI @ :8000
-make dev-frontend   # Vite   @ :5173
+make dev-backend    # FastAPI @ :8000（含 --reload 热重启）
+make dev-frontend   # Vite    @ :5173（含 HMR 热更新）
 ```
 
 打开 http://localhost:5173 即可。
 
-### 手动启动
+### 生产预览（单进程模式）
 
 ```bash
-# 后端
-conda create -n finsight python=3.11 -y && conda activate finsight
-pip install -r backend/requirements.txt
-cp .env.example .env                          # 首次
-python scripts/seed_data.py                   # 生成 data/finsight.db
-uvicorn backend.main:app --reload --port 8000
-
-# 前端
-cd frontend && npm install && npm run dev
+make serve-prod     # build 前端 + uvicorn（无 reload），:8000 同时服务 API + 静态
 ```
+
+打开 http://localhost:8000——和 VPS 部署后的形态完全一致。详见 [docs/deployment.md](docs/deployment.md)。
 
 ### 验证
 
 ```bash
 curl http://localhost:8000/api/health
-# {"status":"ok","model":"zai-org/glm-4.7-flash","provider":"lmstudio"}
+# {"status":"ok","model":"glm-4.7-flash","provider":"zhipu","default_provider_id":"zhipu"}
+
+curl http://localhost:8000/api/providers
+# 返回所有已配置的 chat provider 列表（embedding 不会出现在这里）
 
 curl -N -X POST http://localhost:8000/api/analyze \
   -H "Content-Type: application/json" \
-  -d '{"query":"信用卡业务上个月有什么异常？"}'
+  -d '{"query":"信用卡业务上个月有什么异常？","provider_id":"zhipu"}'
 ```
 
 ### 跑测试
 
 ```bash
 make test
-# 23 passed in ~0.3s
+# 80 passed in ~4s
 ```
 
 ## 演示场景
@@ -152,49 +152,64 @@ chat LLM 是无状态调用，切换 provider 零代价。但 **embedding 不一
 | 为什么不用 LangChain？ | Outer/Inner Harness 自研，控制力和可审计性强，金融场景需要每步 trace；LangChain 抽象过深，调试成本高 |
 | 异常检测方法？ | 统计：历史均值 ± 标准差，deviation 倍数映射到 4 级 severity。不过度工程化，不引入 ML 模型 |
 | 怎么防止 LLM 编造数据？ | Prompt 硬约束"数字必须来自工具返回" + Pydantic 输出 schema 校验 + SQL 只读白名单 |
-| Provider 切换？ | 多 provider 预置在 `.env`，前端 Header 下拉实时切换，选择持久化到 `localStorage`。每次 `/api/analyze` 带 `provider_id`，trace 记录每次用的是哪个。Embedding 单独锁死 |
+| Skills 和 RAG 的区别？ | RAG = 真实历史事件复盘（向量相似度被动检索）；Skills = 结构化方法论 SOP（`use_skill` 按名字显式加载）。两种召回机制故意分开，避免功能重合 |
+| Provider 切换？ | 多 provider 预置在 `.env`（`{ID}_LABEL/_BASE_URL/_API_KEY/_MODEL`），前端 Header 下拉实时切换，选择持久化到 `localStorage`。每次 `/api/analyze` 带 `provider_id`，trace 记录每次用的是哪个。Embedding 单独锁死 |
+| Off-topic 问题怎么处理？ | System prompt 明确指引：闲聊/非业务问题不调用任何工具，直接 final_text 礼貌重定向。ReportPanel 在 `status=done` 且无 report 时显示"对话式回复"文案 |
 | SSE vs WebSocket？ | 单向推送够用，SSE 简单、天然兼容 HTTP/2、在 Nginx 反向代理里配置只要 `proxy_buffering off` |
-| 生产扩展？ | SQLite → PostgreSQL，增加 Chroma 做 RAG 案例检索，Redis 做 Trace 日志缓存，Docker Compose 一键部署 |
+| 部署方案？ | 单进程方案：FastAPI 同端口服务 API + `frontend/dist/` 静态文件（同源无 CORS）；`make serve-prod` 本地预览，未来 Docker 化部署到 VPS |
+| 生产扩展？ | SQLite → PostgreSQL，Chroma 已在用，Redis 可加做 trace 缓存，Docker Compose 一键部署 |
 
 ## 项目文档
 
 - `FinSight Agent.md` — 原始设计文档
-- `docs/plans/2026-04-18-finsight-agent-mvp.md` — 两天 MVP 实施计划 + 下周占位清单
+- `HANDOFF.md` — 会话交接摘要（当前进度、关键决策、下一步）
+- `docs/deployment.md` — 本地生产预览 + VPS 部署指南
+- `docs/plans/2026-04-18-finsight-agent-mvp.md` — 历史实施计划
 
 ## 开发路线
 
-- **Week 1（当前）**: 后端 ReAct 循环 + 3 工具 + SSE + React 前端，端到端可演示
-- **Week 2（占位预留）**:
-  - RAG 历史案例库（Chroma + 3-5 案例 markdown + `rag_search` 工具）
+- **Week 1 ✅**: 后端 ReAct 循环 + 3 工具 + SSE + React 前端，端到端可演示
+- **Week 2 ✅**:
+  - RAG 历史案例库（Chroma + 2 个真实历史事件复盘 + `rag_search` 工具）
   - `financial_api` 工具 + 行业基准表
-  - 多 Provider UI 切换器
-  - Human-in-the-Loop 真实审批（POST `/api/approve`）
-  - Trace 日志持久化 + 查看页
   - KPI 卡片接真实 SQLite 聚合
-  - Docker Compose + VPS 部署
-  - UI 用 Claude Design 重做视觉
-  - Claude Code Skills（`.claude/skills/`）——参考 Anthropic 官方 `financial-services-plugins` 格式，为零售银行运营场景做领域适配
+  - HITL 真实审批（`POST /api/approve` + SQLite 持久化）
+  - Trace 日志持久化 + 历史分析 modal（含"再问一次"回放）
+  - Skills 系统（5 个 SKILL.md 方法论 + `use_skill` 工具 + 动态 catalog 注入 system prompt）
+  - **多 Provider 切换器**：双 provider 预置（本地 LM Studio + 智谱云），前端 Header 下拉运行时切换，选择 localStorage 持久化，每个 trace 记录 `provider_id`
+  - **SiliconFlow bge-m3 embedding**：云端免费 1024 维，Chroma 索引与 embedding 模型强绑定（换模型需 `python scripts/index_cases.py` 重建）
+- **Day 8 ✅**: FastAPI 托管前端静态文件（单进程部署）—— `make serve-prod` 同端口服务 API + SPA
+- **Day 9（计划中）**: Docker + VPS 部署
+- **UI 视觉升级（用户主导）**: 用 Claude Design 重做
 
 ## 目录结构
 
 ```
-Finsight-agent/
+Finsight-Agent/
 ├── backend/                    # FastAPI 后端
-│   ├── agent/                 # ReAct orchestrator + prompts + Pydantic models
-│   ├── tools/                 # sql_query / anomaly_detect / report_gen + registry
-│   ├── llm/                   # OpenAI 兼容 client + reasoning_content 归一化
-│   ├── db/                    # SQLite 连接
+│   ├── agent/                 # orchestrator / prompts / Pydantic models
+│   ├── tools/                 # sql_query / anomaly_detect / financial_api / rag_search / use_skill / report_gen + registry
+│   ├── llm/                   # OpenAI 兼容 client（provider 工厂 + reasoning_content 归一化 + 独立 embedding client）
+│   ├── db/                    # SQLite 连接 + kpi 聚合 + approvals + traces 持久化
 │   ├── sse/                   # SSE 事件序列化
-│   └── tests/                 # pytest (23 个用例)
+│   ├── skills/                # 方法论 skill 库（5 个 SKILL.md + loader）
+│   ├── knowledge_base/        # RAG 案例库（真实历史事件复盘 + loader）
+│   └── tests/                 # pytest (80 个用例)
 ├── frontend/                   # React + Vite + TS
 │   └── src/
-│       ├── components/        # Header / KPI / ChatInput / Reasoning / Report / Cards
-│       ├── hooks/             # useSSE.ts
+│       ├── components/        # Header / KPI / ChatInput / Reasoning / Report /
+│       │                      # AnomalyCard / ActionItemCard / ApprovalButtons /
+│       │                      # CaseDetailModal / SkillDetailModal / TraceHistoryModal /
+│       │                      # ProviderSwitcher
+│       ├── hooks/             # useSSE / useCases / useSkills / useProviders
 │       ├── types/             # 与 Pydantic 对齐的 TS 类型
-│       └── utils/             # fetchKPI / fetchHealth
+│       └── utils/             # fetchKPI / fetchHealth / fetchProviders / ...
 ├── scripts/
-│   └── seed_data.py           # 生成 60 行模拟数据（random seed=42 可重复）
-├── data/                       # SQLite DB（gitignore）
-├── docs/plans/                # 实施计划
-└── Makefile                    # 常用命令快捷方式
+│   ├── seed_data.py           # 生成业务数据 + 行业基准（随机 seed=42，可重复）
+│   └── index_cases.py         # 构建 Chroma 向量索引（idempotent；自动清理孤立 UUID 目录）
+├── data/                       # SQLite DB + Chroma（gitignore，含备份子目录）
+├── docs/
+│   ├── deployment.md          # 本地生产预览 + VPS 部署指南
+│   └── plans/                 # 历史实施计划
+└── Makefile                    # install / seed / dev-{backend,frontend} / test / build / serve-prod / clean
 ```
