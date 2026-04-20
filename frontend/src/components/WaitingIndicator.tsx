@@ -22,13 +22,16 @@ export function WaitingIndicator({ stage }: Props) {
         : "免费档响应较慢，请耐心等待…";
 
   return (
-    <div className="text-sm text-slate-600 italic border-l-2 border-indigo-300 pl-3 py-1.5 bg-indigo-50/40 rounded-r flex items-center gap-2">
-      <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500" />
+    <div className="text-sm text-ink-600 font-serif italic border-l border-seal/50 pl-3 py-1.5 bg-seal-50/30 rounded-r-sm flex items-center gap-2">
+      <span className="relative flex h-2 w-2 shrink-0">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-seal-400 opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-seal" />
       </span>
       <span>
-        {icon} {label}（{elapsed}s）
+        {icon} {label}
+        <span className="font-mono not-italic text-ink-500 ml-1">
+          ({elapsed}s)
+        </span>
       </span>
     </div>
   );

@@ -21,22 +21,24 @@ export function Header({
   providerSwitcherDisabled,
 }: Props) {
   return (
-    <header className="flex items-center justify-between px-6 h-14 border-b border-slate-200 bg-white">
-      <div className="flex items-center gap-3">
-        <div className="w-7 h-7 rounded-md bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold">
+    <header className="flex items-center justify-between px-6 h-14 border-b border-ink-200 bg-paper/70 backdrop-blur-sm">
+      <div className="flex items-baseline gap-3">
+        <div className="w-7 h-7 rounded-sm bg-seal flex items-center justify-center text-paper-50 font-serif font-bold text-sm leading-none">
           F
         </div>
-        <h1 className="text-lg font-semibold text-slate-800">FinSight Agent</h1>
-        <span className="text-xs text-slate-400 hidden sm:inline">
-          金融数据智能分析
+        <h1 className="font-serif text-xl font-bold text-ink-900 tracking-tight leading-none">
+          FinSight
+        </h1>
+        <span className="font-serif italic text-xs text-ink-500 hidden sm:inline border-l border-ink-300 pl-3">
+          信用卡业务分析台
         </span>
       </div>
-      <div className="flex items-center gap-4 text-xs text-slate-500">
+      <div className="flex items-center gap-3 text-xs">
         {onOpenHistory && (
           <button
             type="button"
             onClick={onOpenHistory}
-            className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-slate-100 text-slate-600 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-sm text-ink-600 hover:text-ink-900 hover:underline underline-offset-4 decoration-ink-300 transition-colors"
             title="查看历史分析记录"
           >
             <span>📋</span>
@@ -45,22 +47,24 @@ export function Header({
         )}
         {skillCount > 0 && (
           <div
-            className="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 text-amber-700 border border-amber-100"
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm border border-amber-300/60 bg-amber-50/60 text-amber-800"
             title="Agent 方法论 skills：按名字加载 SOP 指引"
           >
             <span>🎯</span>
-            <span className="font-medium">{skillCount} 个 skills</span>
+            <span className="font-mono">{skillCount}</span>
+            <span className="text-amber-600">skills</span>
           </div>
         )}
         {caseCount > 0 && (
           <div
-            className="flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50 text-indigo-700 border border-indigo-100"
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm border border-ink-200 bg-paper-50 text-ink-700"
             title="RAG 案例库：向量检索支持根因推理"
           >
             <span>📚</span>
-            <span className="font-medium">{caseCount} 个历史案例</span>
-            <span className="text-indigo-400">·</span>
-            <span className="font-mono text-[10px]">1024d · cosine</span>
+            <span className="font-mono">{caseCount}</span>
+            <span className="text-ink-500">cases</span>
+            <span className="text-ink-300">·</span>
+            <span className="font-mono text-[10px] text-ink-500">1024d · cosine</span>
           </div>
         )}
         <ProviderSwitcher

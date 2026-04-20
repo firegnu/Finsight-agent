@@ -14,8 +14,6 @@ interface Props {
 
 type SubmitState = "idle" | "submitting" | "error";
 
-// Talks to POST/GET/DELETE /api/approve/{report_id} for persistence.
-// Decisions survive page refresh because they're stored in SQLite.
 export function ApprovalButtons({ reportId, traceId, requiresReview }: Props) {
   const [record, setRecord] = useState<ApprovalRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,10 +68,14 @@ export function ApprovalButtons({ reportId, traceId, requiresReview }: Props) {
   };
 
   if (!requiresReview) {
-    return <div className="text-xs text-slate-500">✓ 此报告无需人工审批</div>;
+    return (
+      <div className="text-xs text-ink-500 font-serif italic">
+        ✓ 此报告无需人工审批
+      </div>
+    );
   }
   if (loading) {
-    return <div className="text-xs text-slate-400">加载审批状态...</div>;
+    return <div className="text-xs text-ink-400 italic">加载审批状态…</div>;
   }
 
   const decision = record?.decision ?? null;
@@ -82,10 +84,10 @@ export function ApprovalButtons({ reportId, traceId, requiresReview }: Props) {
   if (decision === "approved") {
     return (
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-green-700">
+        <div className="flex items-center gap-2 text-sm font-serif font-bold text-emerald-800">
           <span>✓ 已批准执行</span>
           {record?.decided_at && (
-            <span className="text-[10px] text-slate-400 font-mono">
+            <span className="text-[10px] text-ink-400 font-mono font-normal">
               {formatTime(record.decided_at)}
             </span>
           )}
@@ -94,11 +96,11 @@ export function ApprovalButtons({ reportId, traceId, requiresReview }: Props) {
           type="button"
           onClick={revoke}
           disabled={disabled}
-          className="text-xs text-slate-400 hover:text-slate-600 underline disabled:opacity-50"
+          className="text-xs text-ink-500 hover:text-ink-800 underline underline-offset-2 disabled:opacity-50"
         >
           撤销
         </button>
-        {error && <span className="text-xs text-red-500">{error}</span>}
+        {error && <span className="text-xs text-red-600">{error}</span>}
       </div>
     );
   }
@@ -106,10 +108,10 @@ export function ApprovalButtons({ reportId, traceId, requiresReview }: Props) {
   if (decision === "rejected") {
     return (
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-red-700">
+        <div className="flex items-center gap-2 text-sm font-serif font-bold text-seal">
           <span>✗ 已驳回</span>
           {record?.decided_at && (
-            <span className="text-[10px] text-slate-400 font-mono">
+            <span className="text-[10px] text-ink-400 font-mono font-normal">
               {formatTime(record.decided_at)}
             </span>
           )}
@@ -118,11 +120,11 @@ export function ApprovalButtons({ reportId, traceId, requiresReview }: Props) {
           type="button"
           onClick={revoke}
           disabled={disabled}
-          className="text-xs text-slate-400 hover:text-slate-600 underline disabled:opacity-50"
+          className="text-xs text-ink-500 hover:text-ink-800 underline underline-offset-2 disabled:opacity-50"
         >
           撤销
         </button>
-        {error && <span className="text-xs text-red-500">{error}</span>}
+        {error && <span className="text-xs text-red-600">{error}</span>}
       </div>
     );
   }
@@ -133,23 +135,23 @@ export function ApprovalButtons({ reportId, traceId, requiresReview }: Props) {
         type="button"
         onClick={() => submit("approved")}
         disabled={disabled}
-        className="px-4 py-1.5 text-sm rounded bg-green-600 text-white hover:bg-green-700 font-medium transition-colors disabled:bg-slate-400 disabled:cursor-wait"
+        className="px-4 py-1.5 text-sm rounded-sm bg-emerald-700 text-paper-50 hover:bg-emerald-800 font-medium tracking-wide transition-colors disabled:bg-ink-300 disabled:cursor-wait"
       >
-        {submitState === "submitting" ? "提交中..." : "✓ 批准执行"}
+        {submitState === "submitting" ? "提交中…" : "✓ 批准执行"}
       </button>
       <button
         type="button"
         onClick={() => submit("rejected")}
         disabled={disabled}
-        className="px-4 py-1.5 text-sm rounded bg-red-100 text-red-700 hover:bg-red-200 font-medium transition-colors disabled:opacity-50"
+        className="px-4 py-1.5 text-sm rounded-sm bg-seal-50 text-seal border border-seal/40 hover:bg-seal-100 hover:border-seal font-medium tracking-wide transition-colors disabled:opacity-50"
       >
         ✗ 驳回
       </button>
-      <span className="text-[11px] text-slate-400 ml-2">
+      <span className="text-[11px] text-ink-400 ml-2 font-serif italic">
         审批决策会持久化到 SQLite
       </span>
       {error && (
-        <span className="text-xs text-red-500 ml-2">⚠️ {error}</span>
+        <span className="text-xs text-red-600 ml-2">⚠️ {error}</span>
       )}
     </div>
   );

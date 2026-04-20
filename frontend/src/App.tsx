@@ -64,7 +64,7 @@ export default function App() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-slate-50">
+    <div className="h-full flex flex-col bg-paper">
       <Header
         caseCount={cases.cases.length}
         skillCount={skills.skills.length}
@@ -77,11 +77,11 @@ export default function App() {
         onProviderChange={setSelectedProviderId}
         providerSwitcherDisabled={status === "running"}
       />
-      <div className="flex-none p-4 border-b border-slate-200 bg-white">
+      <div className="flex-none p-4 border-b border-ink-200 bg-paper-50">
         <KPICards />
       </div>
       <div className="flex-1 flex min-h-0">
-        <div className="w-2/5 border-r border-slate-200 bg-white overflow-hidden">
+        <div className="w-2/5 border-r border-ink-200 bg-paper-50 overflow-hidden">
           <ReasoningPanel
             events={events}
             status={status}
@@ -91,7 +91,7 @@ export default function App() {
             onOpenSkill={setSelectedSkillName}
           />
         </div>
-        <div className="flex-1 overflow-hidden bg-white">
+        <div className="flex-1 overflow-hidden bg-paper-50">
           <ReportPanel
             report={report}
             status={status}
@@ -104,7 +104,7 @@ export default function App() {
           />
         </div>
       </div>
-      <div className="flex-none p-4 border-t border-slate-200 bg-white">
+      <div className="flex-none p-4 border-t border-ink-200 bg-paper-50">
         <ChatInput
           value={input}
           onChange={setInput}
