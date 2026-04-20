@@ -8,12 +8,19 @@ interface Props {
   status: AgentStatus;
   casesById: Record<string, CaseMeta>;
   onOpenCase: (id: string) => void;
+  onOpenTrace?: (traceId: string) => void;
 }
 
-export function ReportPanel({ report, status, casesById, onOpenCase }: Props) {
+export function ReportPanel({
+  report,
+  status,
+  casesById,
+  onOpenCase,
+  onOpenTrace,
+}: Props) {
   if (!report) {
     return (
-      <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+      <div className="h-full flex items-center justify-center text-slate-400 text-sm px-6 text-center">
         {status === "running" ? (
           <span className="inline-flex items-center gap-2">
             <span className="inline-block w-3 h-3 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin" />
@@ -21,6 +28,8 @@ export function ReportPanel({ report, status, casesById, onOpenCase }: Props) {
           </span>
         ) : status === "error" ? (
           <span>❌ 分析失败，请查看左侧错误信息</span>
+        ) : status === "done" ? (
+          <span>💬 此次为对话式回复，未生成结构化报告</span>
         ) : (
           <span>📋 等待分析结果</span>
         )}
@@ -33,8 +42,25 @@ export function ReportPanel({ report, status, casesById, onOpenCase }: Props) {
       <div className="flex-none px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-slate-700">📊 分析报告</h2>
-          <div className="text-[11px] text-slate-400 mt-0.5 font-mono">
-            期间 {report.period} · {report.report_id} · {formatTime(report.generated_at)}
+          <div className="text-[11px] text-slate-400 mt-0.5 font-mono flex items-center gap-2 flex-wrap">
+            <span>期间 {report.period}</span>
+            <span>·</span>
+            <span>{report.report_id}</span>
+            <span>·</span>
+            <span>{formatTime(report.generated_at)}</span>
+            {onOpenTrace && (
+              <>
+                <span>·</span>
+                <button
+                  type="button"
+                  onClick={() => onOpenTrace(report.trace_id)}
+                  className="text-indigo-500 hover:text-indigo-700 underline"
+                  title="查看完整推理 trace"
+                >
+                  📋 查看 trace
+                </button>
+              </>
+            )}
           </div>
         </div>
         {report.requires_human_review && (

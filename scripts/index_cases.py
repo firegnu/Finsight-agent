@@ -9,6 +9,9 @@ import argparse
 import asyncio
 import json
 import logging
+import re
+import shutil
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -120,7 +123,36 @@ async def build_index(cases_dir: Path, db_path: Path, collection_name: str) -> i
         "Indexed %d cases into collection '%s' at %s",
         len(cases), collection_name, db_path,
     )
+
+    _prune_orphan_segment_dirs(db_path)
     return len(cases)
+
+
+_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+
+
+def _prune_orphan_segment_dirs(db_path: Path) -> None:
+    """Delete UUID-named subdirs that are no longer referenced by any
+    segment in chroma.sqlite3. Chroma doesn't clean these up on
+    delete_collection, so repeated rebuilds pile up stale directories."""
+    sqlite_path = db_path / "chroma.sqlite3"
+    if not sqlite_path.exists():
+        return
+    try:
+        conn = sqlite3.connect(sqlite_path)
+        active = {row[0] for row in conn.execute("SELECT id FROM segments")}
+        conn.close()
+    except sqlite3.Error as e:
+        logger.warning("skipping orphan cleanup (sqlite read failed): %s", e)
+        return
+
+    removed = 0
+    for sub in db_path.iterdir():
+        if sub.is_dir() and _UUID_RE.match(sub.name) and sub.name not in active:
+            shutil.rmtree(sub, ignore_errors=True)
+            removed += 1
+    if removed:
+        logger.info("pruned %d orphan segment dir(s) from %s", removed, db_path)
 
 
 def main() -> None:

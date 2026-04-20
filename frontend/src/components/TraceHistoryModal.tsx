@@ -9,9 +9,16 @@ import { deleteTrace, fetchTraceDetail, fetchTraces } from "../utils/api";
 interface Props {
   open: boolean;
   onClose: () => void;
+  initialTraceId?: string | null;
+  onReuseQuery?: (query: string) => void;
 }
 
-export function TraceHistoryModal({ open, onClose }: Props) {
+export function TraceHistoryModal({
+  open,
+  onClose,
+  initialTraceId,
+  onReuseQuery,
+}: Props) {
   const [traces, setTraces] = useState<TraceSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<TraceDetail | null>(null);
@@ -38,6 +45,14 @@ export function TraceHistoryModal({ open, onClose }: Props) {
     if (open) refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // When modal opens with an initialTraceId, prefer it over the default
+  // "select the newest trace" behavior.
+  useEffect(() => {
+    if (open && initialTraceId) {
+      setSelectedId(initialTraceId);
+    }
+  }, [open, initialTraceId]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -169,13 +184,28 @@ export function TraceHistoryModal({ open, onClose }: Props) {
                     </span>
                     <span>🧮 {detail.step_count} steps</span>
                     <StatusChip status={detail.status} />
-                    <button
-                      type="button"
-                      onClick={() => onDelete(detail.trace_id)}
-                      className="ml-auto text-[11px] text-red-500 hover:text-red-700 underline"
-                    >
-                      删除
-                    </button>
+                    <div className="ml-auto flex items-center gap-3">
+                      {onReuseQuery && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onReuseQuery(detail.user_query);
+                            onClose();
+                          }}
+                          className="text-[11px] text-indigo-600 hover:text-indigo-800 underline"
+                          title="把这条 query 回填到输入框，可以切换 provider 再问一次"
+                        >
+                          🔁 再问一次
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => onDelete(detail.trace_id)}
+                        className="text-[11px] text-red-500 hover:text-red-700 underline"
+                      >
+                        删除
+                      </button>
+                    </div>
                   </div>
                 </div>
 

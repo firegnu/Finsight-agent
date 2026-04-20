@@ -24,6 +24,7 @@ export default function App() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [selectedSkillName, setSelectedSkillName] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyInitialTrace, setHistoryInitialTrace] = useState<string | null>(null);
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(
     () => localStorage.getItem(PROVIDER_STORAGE_KEY),
   );
@@ -67,7 +68,10 @@ export default function App() {
       <Header
         caseCount={cases.cases.length}
         skillCount={skills.skills.length}
-        onOpenHistory={() => setHistoryOpen(true)}
+        onOpenHistory={() => {
+          setHistoryInitialTrace(null);
+          setHistoryOpen(true);
+        }}
         providers={providersState.providers}
         selectedProviderId={selectedProviderId}
         onProviderChange={setSelectedProviderId}
@@ -92,6 +96,10 @@ export default function App() {
             status={status}
             casesById={cases.byId}
             onOpenCase={setSelectedCaseId}
+            onOpenTrace={(id) => {
+              setHistoryInitialTrace(id);
+              setHistoryOpen(true);
+            }}
           />
         </div>
       </div>
@@ -114,6 +122,8 @@ export default function App() {
       <TraceHistoryModal
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
+        initialTraceId={historyInitialTrace}
+        onReuseQuery={(q) => setInput(q)}
       />
     </div>
   );
