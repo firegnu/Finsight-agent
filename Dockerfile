@@ -41,9 +41,11 @@ COPY scripts/ ./scripts/
 # path and registers the SPA catch-all route
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
-# Entrypoint does first-run seed + RAG index build if data/ is empty
+# Entrypoint does first-run seed + RAG index build if data/ is empty.
+# Strip CR so a CRLF checkout (Windows git) doesn't break `#!/bin/sh`.
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
+    && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 8000
 
