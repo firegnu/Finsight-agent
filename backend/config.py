@@ -20,7 +20,7 @@ class ProviderConfig(BaseModel):
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    default_provider_id: str = "zhipu"
+    default_provider_id: str = "deepseek"
     max_agent_steps: int = 20
 
     # Provider 1: LM Studio (local)
